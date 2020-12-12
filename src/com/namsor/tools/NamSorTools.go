@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"flag"
 	namsorapi "github.com/namsor/namsor-golang-sdk2"
+	"golang.org/x/net/context"
 	"hash"
 )
 
@@ -120,6 +121,7 @@ type NamrSorTools struct {
 	done                []string
 	separatorOut        string
 	separatorIn         string
+	auth                context.Context
 	personalApi         *namsorapi.PersonalApiService
 	adminApi            *namsorapi.AdminApiService
 	TIMEOUT             int
@@ -167,6 +169,14 @@ func NewNamSorTools() *NamrSorTools {
 
 	if digest {
 		tools.digest = md5.New()
+	}
+
+	if apiKey != "" {
+		tools.auth = context.WithValue(context.Background(), namsorapi.ContextAPIKey, namsorapi.APIKey{
+			Key: apiKey,
+		})
+	} else {
+		print("Error! No API Key Provided!")
 	}
 
 	return tools
