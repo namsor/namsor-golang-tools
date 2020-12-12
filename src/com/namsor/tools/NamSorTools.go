@@ -3,7 +3,7 @@ package main
 import (
 	"crypto/md5"
 	"encoding/hex"
-	"flag"
+	flag "github.com/ogier/pflag"
 	namsorapi "github.com/namsor/namsor-golang-sdk2"
 	"golang.org/x/net/context"
 	"hash"
