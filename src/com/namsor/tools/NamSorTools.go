@@ -117,30 +117,38 @@ var (
 )
 
 type NamrSorTools struct {
-	done               []string
-	separatorOut       string
-	separatorIn        string
-	personalApi        *namsorapi.PersonalApiService
-	adminApi           *namsorapi.AdminApiService
-	TIMEOUT            int
-	withUID            bool
-	recover            bool
-	skipErrors         bool
-	digest             hash.Hash
-	commandLineOptions map[string]interface{}
+	done                []string
+	separatorOut        string
+	separatorIn         string
+	personalApi         *namsorapi.PersonalApiService
+	adminApi            *namsorapi.AdminApiService
+	TIMEOUT             int
+	withUID             bool
+	recover             bool
+	skipErrors          bool
+	digest              hash.Hash
+	commandLineOptions  map[string]interface{}
+	firstLastNamesGeoIn map[string]string
+	firstLastNamesIn    map[string]string
+	personalNamesIn     map[string]string
+	personalNamesGeoIn  map[string]string
 }
 
 func NewNamSorTools() *NamrSorTools {
 	config := namsorapi.NewConfiguration()
 	client := namsorapi.NewAPIClient(config)
 	tools := &NamrSorTools{
-		separatorIn:  "|",
-		separatorOut: "|",
-		adminApi:     client.AdminApi,
-		personalApi:  client.PersonalApi,
-		TIMEOUT:      30000,
-		digest:       nil,
-		recover:      recover,
+		separatorIn:         "|",
+		separatorOut:        "|",
+		adminApi:            client.AdminApi,
+		personalApi:         client.PersonalApi,
+		TIMEOUT:             30000,
+		digest:              nil,
+		recover:             recover,
+		firstLastNamesGeoIn: map[string]string{},
+		firstLastNamesIn:    map[string]string{},
+		personalNamesIn:     map[string]string{},
+		personalNamesGeoIn:  map[string]string{},
 		commandLineOptions: map[string]interface{}{
 			"apiKey":          apiKey,
 			"inputFile":       inputFile,
@@ -188,6 +196,7 @@ func (tools *NamrSorTools) digestText(inClear string) string {
 	tools.digest.Write([]byte(inClear))
 	return hex.EncodeToString(tools.digest.Sum(nil))
 }
+
 func main() {
 	flag.StringVar(&apiKey, "apiKey", "", "NamSor API Key")
 	flag.StringVar(&inputFile, "inputFile", "", "input file name")
