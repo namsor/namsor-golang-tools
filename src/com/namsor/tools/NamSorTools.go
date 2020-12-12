@@ -7,8 +7,6 @@ import (
 	namsorapi "github.com/namsor/namsor-golang-sdk2"
 	"golang.org/x/net/context"
 	"hash"
-
-	namsorapi "github.com/namsor/namsor-golang-sdk2"
 )
 
 const DEFAULT_DIGEST_ALGO string = "MD5"
