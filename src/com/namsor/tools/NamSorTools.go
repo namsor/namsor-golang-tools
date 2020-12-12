@@ -1,7 +1,8 @@
 package main
 
 import (
-	"crypto"
+	"crypto/md5"
+	"encoding/hex"
 	"flag"
 	namsorapi "github.com/namsor/namsor-golang-sdk2"
 	"hash"
@@ -138,7 +139,8 @@ func NewNamSorTools() *NamrSorTools {
 		adminApi:     client.AdminApi,
 		personalApi:  client.PersonalApi,
 		TIMEOUT:      30000,
-		digest:       crypto.MD5.New(),
+		digest:       nil,
+		recover:      recover,
 		commandLineOptions: map[string]interface{}{
 			"apiKey":          apiKey,
 			"inputFile":       inputFile,
@@ -153,6 +155,10 @@ func NewNamSorTools() *NamrSorTools {
 			"endpoint":        endpoint,
 			"encoding":        encoding,
 		},
+	}
+
+	if digest {
+		tools.digest = md5.New()
 	}
 
 	return tools
@@ -170,6 +176,18 @@ func (tools *NamrSorTools) getDigest() hash.Hash {
 	return tools.digest
 }
 
+func (tools *NamrSorTools) getCommandLineOptions() map[string]interface{} {
+	return tools.commandLineOptions
+}
+
+// equal to digest(string)
+func (tools *NamrSorTools) digestText(inClear string) string {
+	if tools.getDigest() == nil || inClear == "" {
+		return inClear
+	}
+	tools.digest.Write([]byte(inClear))
+	return hex.EncodeToString(tools.digest.Sum(nil))
+}
 func main() {
 	flag.StringVar(&apiKey, "apiKey", "", "NamSor API Key")
 	flag.StringVar(&inputFile, "inputFile", "", "input file name")
