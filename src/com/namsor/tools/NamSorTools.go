@@ -3,9 +3,10 @@ package main
 import (
 	"crypto/md5"
 	"encoding/hex"
-	"flag"
-	namsorapi "github.com/namsor/namsor-golang-sdk2"
+	flag "github.com/ogier/pflag"
 	"hash"
+
+	namsorapi "github.com/namsor/namsor-golang-sdk2"
 )
 
 const DEFAULT_DIGEST_ALGO string = "MD5"
@@ -198,18 +199,17 @@ func (tools *NamrSorTools) digestText(inClear string) string {
 }
 
 func main() {
-	flag.StringVar(&apiKey, "apiKey", "", "NamSor API Key")
-	flag.StringVar(&inputFile, "inputFile", "", "input file name")
-	flag.StringVar(&countryIso2, "countryIso2", "", "countryIso2 default")
-	flag.StringVar(&outputFile, "outputFile", "", "output file name")
-	flag.BoolVar(&overwrite, "overwrite", false, "overwrite existing output file")
-	flag.BoolVar(&recover, "recover", false, "continue from a job (requires uid)")
-	flag.StringVar(&inputDataFormat, "inputDataFormat", "", "input data format : first name, last name (fnln) / first name, last name, geo country iso2 (fnlngeo) / full name (name) / full name, geo country iso2 (namegeo) ")
-	flag.BoolVar(&header, "header", false, "output header")
-	flag.BoolVar(&uid, "uid", false, "input data has an ID prefix")
-	flag.BoolVar(&digest, "digest", false, "SHA-256 digest names in output")
-	flag.StringVar(&endpoint, "endpoint", "", "service : parse / gender / origin / diaspora / usraceethnicity")
-	flag.StringVar(&encoding, "encoding", "", "encoding : UTF-8 by default")
+	flag.StringVarP(&apiKey, "apiKey","a", "", "NamSor API Key")
+	flag.StringVarP(&inputFile, "inputFile","i", "", "input file name")
+	flag.StringVarP(&outputFile, "outputFile","o", "", "output file name")
+	flag.BoolVarP(&overwrite, "overwrite","w", false, "overwrite existing output file")
+	flag.BoolVarP(&recover, "recover","r", false, "continue from a job (requires uid)")
+	flag.StringVarP(&inputDataFormat, "inputDataFormat","f", "", "input data format : first name, last name (fnln) / first name, last name, geo country iso2 (fnlngeo) / full name (name) / full name, geo country iso2 (namegeo) ")
+	flag.BoolVarP(&header, "header","h", false, "output header")
+	flag.BoolVarP(&uid, "uid","u", false, "input data has an ID prefix")
+	flag.BoolVarP(&digest, "digest","d", false, "SHA-256 digest names in output")
+	flag.StringVarP(&endpoint, "service","s", "", "service : parse / gender / origin / diaspora / usraceethnicity")
+	flag.StringVarP(&encoding, "encoding","e", "", "encoding : UTF-8 by default")
 
 	flag.Parse()
 
