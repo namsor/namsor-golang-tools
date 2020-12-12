@@ -116,40 +116,69 @@ var (
 )
 
 type NamrSorTools struct {
-	done         []string
-	separatorOut string
-	separatorIn  string
-	personalApi  *namsorapi.PersonalApiService
-	adminApi     *namsorapi.AdminApiService
-	TIMEOUT      int
-	withUID      bool
-	recover      bool
-	skipErrors   bool
-	digest       hash.Hash
+	done               []string
+	separatorOut       string
+	separatorIn        string
+	personalApi        *namsorapi.PersonalApiService
+	adminApi           *namsorapi.AdminApiService
+	TIMEOUT            int
+	withUID            bool
+	recover            bool
+	skipErrors         bool
+	digest             hash.Hash
+	commandLineOptions map[string]interface{}
 }
 
-func New(tools NamrSorTools) NamrSorTools {
+func NewNamSorTools() *NamrSorTools {
 	config := namsorapi.NewConfiguration()
 	client := namsorapi.NewAPIClient(config)
-	tools.separatorIn = "|"
-	tools.separatorOut = "|"
-	tools.adminApi = client.AdminApi
-	tools.personalApi = client.PersonalApi
-	tools.TIMEOUT = 30000
-	tools.digest = crypto.MD5.New()
+	tools := &NamrSorTools{
+		separatorIn:  "|",
+		separatorOut: "|",
+		adminApi:     client.AdminApi,
+		personalApi:  client.PersonalApi,
+		TIMEOUT:      30000,
+		digest:       crypto.MD5.New(),
+		commandLineOptions: map[string]interface{}{
+			"apiKey":          apiKey,
+			"inputFile":       inputFile,
+			"countryIso2":     countryIso2,
+			"outputFile":      outputFile,
+			"overwrite":       overwrite,
+			"recover":         recover,
+			"inputDataFormat": inputDataFormat,
+			"header":          header,
+			"uid":             uid,
+			"digest":          digest,
+			"endpoint":        endpoint,
+			"encoding":        encoding,
+		},
+	}
 
 	return tools
+}
+
+func (tools *NamrSorTools) isWithUID() bool {
+	return tools.withUID
+}
+
+func (tools *NamrSorTools) isRecover() bool {
+	return tools.recover
+}
+
+func (tools *NamrSorTools) getDigest() hash.Hash {
+	return tools.digest
 }
 
 func main() {
 	flag.StringVar(&apiKey, "apiKey", "", "NamSor API Key")
 	flag.StringVar(&inputFile, "inputFile", "", "input file name")
 	flag.StringVar(&countryIso2, "countryIso2", "", "countryIso2 default")
-	flag.StringVar(&countryIso2, "outputFile", "", "output file name")
+	flag.StringVar(&outputFile, "outputFile", "", "output file name")
 	flag.BoolVar(&overwrite, "overwrite", false, "overwrite existing output file")
-	flag.BoolVar(&overwrite, "recover", false, "continue from a job (requires uid)")
+	flag.BoolVar(&recover, "recover", false, "continue from a job (requires uid)")
 	flag.StringVar(&inputDataFormat, "inputDataFormat", "", "input data format : first name, last name (fnln) / first name, last name, geo country iso2 (fnlngeo) / full name (name) / full name, geo country iso2 (namegeo) ")
-	flag.BoolVar(&overwrite, "header", false, "output header")
+	flag.BoolVar(&header, "header", false, "output header")
 	flag.BoolVar(&uid, "uid", false, "input data has an ID prefix")
 	flag.BoolVar(&digest, "digest", false, "SHA-256 digest names in output")
 	flag.StringVar(&endpoint, "endpoint", "", "service : parse / gender / origin / diaspora / usraceethnicity")
@@ -157,4 +186,6 @@ func main() {
 
 	flag.Parse()
 
+	tools := NewNamSorTools()
+	print(tools.commandLineOptions["recover"].(bool))
 }
