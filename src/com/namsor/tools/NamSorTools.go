@@ -550,7 +550,7 @@ func (tools *NamrSorTools) processData(service string, outputHeaders []string, w
 	Data processing
 */
 func (tools *NamrSorTools) process(service string, reader *bufio.Reader, writer *bufio.Writer, softwareNameAndVersion string) error {
-
+	return nil
 }
 
 func (tools *NamrSorTools) appendX(writer *bufio.Writer, outputHeaders []string, inp interface{}, inpType reflect.Type, output interface{}, outputType reflect.Type, softwareNameAndVersion string) {
