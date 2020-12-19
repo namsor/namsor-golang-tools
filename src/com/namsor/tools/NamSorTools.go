@@ -547,7 +547,71 @@ func (tools *NamrSorTools) processData(service string, outputHeaders []string, w
 }
 
 func (tools *NamrSorTools) appendX(writer *bufio.Writer, outputHeaders []string, inp interface{}, inpType reflect.Type, output interface{}, outputType reflect.Type, softwareNameAndVersion string) {
+	flushedUID := make(map[string] bool) // Used as a set
+	inputMap:= reflect.ValueOf(inp)
+	outputMap := reflect.ValueOf(output)
+	if inputMap.Kind() == reflect.Map && outputMap.Kind() == reflect.Map {
+		separatorOut := tools.separatorOut
+		for _,key := range inputMap.MapKeys(){
+			uid := key.Interface().(string)
+			flushedUID[uid] = true
+			writer.WriteString(uid + separatorOut)
 
+			inputObject := inputMap.MapIndex(key)
+			outputObject := outputMap.MapIndex(key)
+
+			switch inpType {
+			case reflect.TypeOf(namsorapi.FirstLastNameIn{}):
+				firstLastNameIn := inputObject.Interface().(namsorapi.FirstLastNameIn)
+				writer.WriteString(tools.digestText(firstLastNameIn.FirstName + separatorOut) + separatorOut + tools.digestText(firstLastNameIn.LastName) + separatorOut)
+			case reflect.TypeOf(namsorapi.FirstLastNameGeoIn{}):
+				firstLastNameGeoIn  := inputObject.Interface().(namsorapi.FirstLastNameGeoIn)
+				writer.WriteString(tools.digestText(firstLastNameGeoIn .FirstName + separatorOut) + separatorOut + tools.digestText(firstLastNameGeoIn .LastName) + separatorOut + firstLastNameGeoIn.CountryIso2 + separatorOut)
+			case reflect.TypeOf(namsorapi.PersonalNameIn{}):
+				personalNameIn  := inputObject.Interface().(namsorapi.PersonalNameIn)
+				writer.WriteString(tools.digestText(personalNameIn.Name + separatorOut) )
+			case reflect.TypeOf(namsorapi.PersonalNameGeoIn{}):
+				personalNameGeoIn  := inputObject.Interface().(namsorapi.PersonalNameGeoIn)
+				writer.WriteString(tools.digestText(personalNameGeoIn.Name + separatorOut + personalNameGeoIn.CountryIso2 + separatorOut) )
+			case reflect.TypeOf(namsorapi.FirstLastNamePhoneNumberIn{}):
+				firstLastNamePhoneNumberIn  := inputObject.Interface().(namsorapi.FirstLastNamePhoneNumberIn)
+				writer.WriteString(tools.digestText(firstLastNamePhoneNumberIn.FirstName + separatorOut + firstLastNamePhoneNumberIn.LastName + separatorOut + firstLastNamePhoneNumberIn.PhoneNumber + separatorOut) )
+			default:
+				// todo: handle error
+			}
+
+			if output == nil {
+				for i:=0; i<len(outputHeaders); i++ {
+					writer.WriteString("" + separatorOut)
+				}
+			}
+			else{
+
+				switch outputType {
+				case reflect.TypeOf(namsorapi.FirstLastNameGenderedOut{}):
+					// todo: complete
+					firstLastNameGenderedOut := outputObject.Interface().(namsorapi.FirstLastNameGenderedOut)
+					scriptName :=
+				case reflect.TypeOf(namsorapi.FirstLastNameOriginedOut{}):
+					// todo: complete
+				case reflect.TypeOf(namsorapi.FirstLastNameDiasporaedOut{}):
+					// todo: complete
+				case reflect.TypeOf(namsorapi.FirstLastNameUsRaceEthnicityOut{}):
+					// todo: complete
+				case reflect.TypeOf(namsorapi.PersonalNameGenderedOut{}):
+					// todo: complete
+				case reflect.TypeOf(namsorapi.PersonalNameGeoOut{}):
+					// todo: complete
+				case reflect.TypeOf(namsorapi.PersonalNameParsedOut{}):
+					// todo: complete
+				case reflect.TypeOf(namsorapi.FirstLastNamePhoneCodedOut{}):
+					// todo: complete
+				default:
+					// todo: handle error
+				}
+			}
+		}
+	}
 }
 
 func main() {
