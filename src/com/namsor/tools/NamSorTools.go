@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"flag"
+	"github.com/antihax/optional"
 	"hash"
 
 	namsorapi "github.com/namsor/namsor-golang-sdk2"
@@ -206,6 +207,57 @@ func (tools *NamrSorTools) digestText(inClear string) string {
 	}
 	tools.digest.Write([]byte(inClear))
 	return hex.EncodeToString(tools.digest.Sum(nil))
+}
+
+/*
+	API Calls
+*/
+func (tools *NamrSorTools) processDiaspora(names []namsorapi.FirstLastNameGeoIn) (map[string]namsorapi.FirstLastNameDiasporaedOut, error) {
+	result := map[string]namsorapi.FirstLastNameDiasporaedOut{}
+	data := namsorapi.BatchFirstLastNameGeoIn{names}
+	body := namsorapi.DiasporaBatchOpts{
+		BatchFirstLastNameGeoIn: optional.NewInterface(data),
+	}
+	origined, _, err := tools.personalApi.DiasporaBatch(tools.auth, &body)
+	if err != nil {
+		return nil, err
+	}
+	for _, personalName := range origined.PersonalNames {
+		result[personalName.Id] = personalName
+	}
+	return result, nil
+}
+
+func (tools *NamrSorTools) processOrigin(names []namsorapi.FirstLastNameIn) (map[string]namsorapi.FirstLastNameOriginedOut, error) {
+	result := map[string]namsorapi.FirstLastNameOriginedOut{}
+	data := namsorapi.BatchFirstLastNameIn{
+		names,
+	}
+	body := namsorapi.OriginBatchOpts{
+		BatchFirstLastNameIn: optional.NewInterface(data),
+	}
+	origined, _, err := tools.personalApi.OriginBatch(tools.auth, &body)
+	if err != nil {
+		return nil, err
+	}
+	for _, personalName := range origined.PersonalNames {
+		result[personalName.Id] = personalName
+	}
+	return result, nil
+}
+
+func (tools *NamrSorTools) processOriginGeo(names []namsorapi.FirstLastNameGeoIn) (map[string]namsorapi.FirstLastNameOriginedOut, error) {
+	var namesNoGeo []namsorapi.FirstLastNameIn
+	for _, name := range names {
+		nameNoGeo := namsorapi.FirstLastNameIn{
+			name.Id,
+			name.FirstName,
+			name.LastName,
+		}
+		namesNoGeo = append(namesNoGeo, nameNoGeo)
+	}
+
+	return tools.processOrigin(namesNoGeo)
 }
 
 func main() {
