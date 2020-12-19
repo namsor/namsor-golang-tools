@@ -126,16 +126,17 @@ type NamrSorTools struct {
 	auth                context.Context
 	personalApi         *namsorapi.PersonalApiService
 	adminApi            *namsorapi.AdminApiService
+	socialApi           *namsorapi.SocialApiService
 	TIMEOUT             int
 	withUID             bool
 	recover             bool
 	skipErrors          bool
 	digest              hash.Hash
 	commandLineOptions  map[string]interface{}
-	firstLastNamesGeoIn map[string]string
-	firstLastNamesIn    map[string]string
-	personalNamesIn     map[string]string
-	personalNamesGeoIn  map[string]string
+	firstLastNamesGeoIn map[string]namsorapi.FirstLastNameGeoIn
+	firstLastNamesIn    map[string]namsorapi.FirstLastNameIn
+	personalNamesIn     map[string]namsorapi.PersonalNameIn
+	personalNamesGeoIn  map[string]namsorapi.PersonalNameGeoIn
 }
 
 func NewNamSorTools() *NamrSorTools {
@@ -146,13 +147,14 @@ func NewNamSorTools() *NamrSorTools {
 		separatorOut:        "|",
 		adminApi:            client.AdminApi,
 		personalApi:         client.PersonalApi,
+		socialApi:           client.SocialApi,
 		TIMEOUT:             30000,
 		digest:              nil,
 		recover:             recover,
-		firstLastNamesGeoIn: map[string]string{},
-		firstLastNamesIn:    map[string]string{},
-		personalNamesIn:     map[string]string{},
-		personalNamesGeoIn:  map[string]string{},
+		firstLastNamesGeoIn: map[string]namsorapi.FirstLastNameGeoIn{},
+		firstLastNamesIn:    map[string]namsorapi.FirstLastNameIn{},
+		personalNamesIn:     map[string]namsorapi.PersonalNameIn{},
+		personalNamesGeoIn:  map[string]namsorapi.PersonalNameGeoIn{},
 		commandLineOptions: map[string]interface{}{
 			"apiKey":          apiKey,
 			"inputFile":       inputFile,
@@ -258,6 +260,241 @@ func (tools *NamrSorTools) processOriginGeo(names []namsorapi.FirstLastNameGeoIn
 	}
 
 	return tools.processOrigin(namesNoGeo)
+}
+
+func (tools *NamrSorTools) processGender(names []namsorapi.FirstLastNameIn) (map[string]namsorapi.FirstLastNameGenderedOut, error) {
+	result := map[string]namsorapi.FirstLastNameGenderedOut{}
+	data := namsorapi.BatchFirstLastNameIn{
+		names,
+	}
+	body := namsorapi.GenderBatchOpts{
+		BatchFirstLastNameIn: optional.NewInterface(data),
+	}
+	gendered, _, err := tools.personalApi.GenderBatch(tools.auth, &body)
+	if err != nil {
+		return nil, err
+	}
+	for _, personalName := range gendered.PersonalNames {
+		result[personalName.Id] = personalName
+	}
+	return result, nil
+}
+
+func (tools *NamrSorTools) processGenderFull(names []namsorapi.PersonalNameIn) (map[string]namsorapi.PersonalNameGenderedOut, error) {
+	result := map[string]namsorapi.PersonalNameGenderedOut{}
+	data := namsorapi.BatchPersonalNameIn{
+		names,
+	}
+	body := namsorapi.GenderFullBatchOpts{
+		BatchPersonalNameIn: optional.NewInterface(data),
+	}
+	gendered, _, err := tools.personalApi.GenderFullBatch(tools.auth, &body)
+	if err != nil {
+		return nil, err
+	}
+	for _, personalName := range gendered.PersonalNames {
+		result[personalName.Id] = personalName
+	}
+	return result, nil
+}
+
+func (tools *NamrSorTools) processGenderGeo(names []namsorapi.FirstLastNameGeoIn) (map[string]namsorapi.FirstLastNameGenderedOut, error) {
+	result := map[string]namsorapi.FirstLastNameGenderedOut{}
+	data := namsorapi.BatchFirstLastNameGeoIn{
+		names,
+	}
+	body := namsorapi.GenderGeoBatchOpts{
+		BatchFirstLastNameGeoIn: optional.NewInterface(data),
+	}
+	gendered, _, err := tools.personalApi.GenderGeoBatch(tools.auth, &body)
+	if err != nil {
+		return nil, err
+	}
+	for _, personalName := range gendered.PersonalNames {
+		result[personalName.Id] = personalName
+	}
+	return result, nil
+}
+
+func (tools *NamrSorTools) processGenderFullGeo(names []namsorapi.PersonalNameGeoIn) (map[string]namsorapi.PersonalNameGenderedOut, error) {
+	result := map[string]namsorapi.PersonalNameGenderedOut{}
+	data := namsorapi.BatchPersonalNameGeoIn{
+		names,
+	}
+	body := namsorapi.GenderFullGeoBatchOpts{
+		BatchPersonalNameGeoIn: optional.NewInterface(data),
+	}
+	gendered, _, err := tools.personalApi.GenderFullGeoBatch(tools.auth, &body)
+	if err != nil {
+		return nil, err
+	}
+	for _, personalName := range gendered.PersonalNames {
+		result[personalName.Id] = personalName
+	}
+	return result, nil
+}
+
+func (tools *NamrSorTools) processCountry(names []namsorapi.PersonalNameIn) (map[string]namsorapi.PersonalNameGeoOut, error) {
+	result := map[string]namsorapi.PersonalNameGeoOut{}
+	data := namsorapi.BatchPersonalNameIn{
+		names,
+	}
+	body := namsorapi.CountryBatchOpts{
+		BatchPersonalNameIn: optional.NewInterface(data),
+	}
+	countried, _, err := tools.personalApi.CountryBatch(tools.auth, &body)
+	if err != nil {
+		return nil, err
+	}
+	for _, personalName := range countried.PersonalNames {
+		result[personalName.Id] = personalName
+	}
+	return result, nil
+}
+
+func (tools *NamrSorTools) processCountryAdapted(names_ []namsorapi.FirstLastNameIn) (map[string]namsorapi.PersonalNameGeoOut, error) {
+	var names []namsorapi.PersonalNameIn
+	for _, name := range names_ {
+		adapted := namsorapi.PersonalNameIn{
+			name.Id,
+			name.FirstName + " " + name.LastName,
+		}
+		names = append(names, adapted)
+	}
+
+	return tools.processCountry(names)
+}
+
+func (tools *NamrSorTools) processParse(names []namsorapi.PersonalNameIn) (map[string]namsorapi.PersonalNameParsedOut, error) {
+	result := map[string]namsorapi.PersonalNameParsedOut{}
+	data := namsorapi.BatchPersonalNameIn{
+		names,
+	}
+	body := namsorapi.ParseNameBatchOpts{
+		BatchPersonalNameIn: optional.NewInterface(data),
+	}
+	parsed, _, err := tools.personalApi.ParseNameBatch(tools.auth, &body)
+	if err != nil {
+		return nil, err
+	}
+	for _, personalName := range parsed.PersonalNames {
+		result[personalName.Id] = personalName
+	}
+	return result, nil
+}
+
+func (tools *NamrSorTools) processParseGeo(names []namsorapi.PersonalNameGeoIn) (map[string]namsorapi.PersonalNameParsedOut, error) {
+	result := map[string]namsorapi.PersonalNameParsedOut{}
+	data := namsorapi.BatchPersonalNameGeoIn{
+		names,
+	}
+	body := namsorapi.ParseNameGeoBatchOpts{
+		BatchPersonalNameGeoIn: optional.NewInterface(data),
+	}
+	parsed, _, err := tools.personalApi.ParseNameGeoBatch(tools.auth, &body)
+	if err != nil {
+		return nil, err
+	}
+	for _, personalName := range parsed.PersonalNames {
+		result[personalName.Id] = personalName
+	}
+	return result, nil
+}
+
+func (tools *NamrSorTools) processUSRaceEthnicity(names []namsorapi.FirstLastNameGeoIn) (map[string]namsorapi.FirstLastNameUsRaceEthnicityOut, error) {
+	result := map[string]namsorapi.FirstLastNameUsRaceEthnicityOut{}
+	data := namsorapi.BatchFirstLastNameGeoIn{
+		names,
+	}
+	body := namsorapi.UsRaceEthnicityBatchOpts{
+		BatchFirstLastNameGeoIn: optional.NewInterface(data),
+	}
+	racedEthnicized, _, err := tools.personalApi.UsRaceEthnicityBatch(tools.auth, &body)
+	if err != nil {
+		return nil, err
+	}
+	for _, personalName := range racedEthnicized.PersonalNames {
+		result[personalName.Id] = personalName
+	}
+	return result, nil
+}
+
+func (tools *NamrSorTools) processPhoneCode(names []namsorapi.FirstLastNamePhoneNumberIn) (map[string]namsorapi.FirstLastNamePhoneCodedOut, error) {
+	result := map[string]namsorapi.FirstLastNamePhoneCodedOut{}
+	data := namsorapi.BatchFirstLastNamePhoneNumberIn{
+		names,
+	}
+	body := namsorapi.PhoneCodeBatchOpts{
+		BatchFirstLastNamePhoneNumberIn: optional.NewInterface(data),
+	}
+	phoneCoded, _, err := tools.socialApi.PhoneCodeBatch(tools.auth, &body)
+	if err != nil {
+		return nil, err
+	}
+	for _, personalName := range phoneCoded.PersonalNamesWithPhoneNumbers {
+		result[personalName.Id] = personalName
+	}
+	return result, nil
+}
+
+/*
+	API call processing
+*/
+func (tools *NamrSorTools) processData(service string, outputHeaders []string, writer *bufio.Writer, flushBuffers bool, softwareNameAndVersion string) {
+	if flushBuffers && len(tools.firstLastNamesIn) != 0 || len(tools.firstLastNamesIn) >= BATCH_SIZE {
+		values := []namsorapi.FirstLastNameIn{}
+		for _, v := range tools.firstLastNamesIn {
+			values = append(values, v)
+		}
+		if service == SERVICE_NAME_ORIGIN {
+			origins, _ := tools.processOrigin(values)
+			tools.appendX(writer, outputHeaders, tools.firstLastNamesIn, origins, softwareNameAndVersion)
+		} else if service == SERVICE_NAME_GENDER {
+			genders, _ := tools.processGender(values)
+			tools.appendX(writer, outputHeaders, tools.firstLastNamesIn, genders, softwareNameAndVersion)
+		} else if service == SERVICE_NAME_COUNTRY {
+			countrieds, _ := tools.processCountryAdapted(values)
+			tools.appendX(writer, outputHeaders, tools.firstLastNamesIn, countrieds, softwareNameAndVersion)
+		}
+		tools.firstLastNamesIn = make(map[string]namsorapi.FirstLastNameIn)
+	}
+	if flushBuffers && len(tools.firstLastNamesGeoIn) != 0 || len(tools.firstLastNamesGeoIn) >= BATCH_SIZE {
+		values := []namsorapi.FirstLastNameGeoIn{}
+		for _, v := range tools.firstLastNamesGeoIn {
+			values = append(values, v)
+		}
+		if service == (SERVICE_NAME_ORIGIN) {
+			origins, _ := tools.processOriginGeo(values)
+			tools.appendX(writer, outputHeaders, tools.firstLastNamesGeoIn, origins, softwareNameAndVersion)
+		} else if service == (SERVICE_NAME_GENDER) {
+			genders, _ := tools.processGenderGeo(values)
+			tools.appendX(writer, outputHeaders, tools.firstLastNamesGeoIn, genders, softwareNameAndVersion)
+		} else if service == (SERVICE_NAME_DIASPORA) {
+			diasporas, _ := tools.processDiaspora(values)
+			tools.appendX(writer, outputHeaders, tools.firstLastNamesGeoIn, diasporas, softwareNameAndVersion)
+		} else if service == (SERVICE_NAME_USRACEETHNICITY) {
+			usRaceEthnicities, _ := tools.processUSRaceEthnicity(values)
+			tools.appendX(writer, outputHeaders, tools.firstLastNamesGeoIn, usRaceEthnicities, softwareNameAndVersion)
+		}
+		tools.firstLastNamesGeoIn = make(map[string]namsorapi.FirstLastNameGeoIn)
+	}
+	if flushBuffers && len(tools.personalNamesIn) != 0 || len(tools.personalNamesIn) >= BATCH_SIZE {
+		values := []namsorapi.PersonalNameIn{}
+		for _, v := range tools.personalNamesIn {
+			values = append(values, v)
+		}
+		if service == (SERVICE_NAME_PARSE) {
+			parseds, _ := tools.processParse(values)
+			tools.appendX(writer, outputHeaders, tools.personalNamesIn, parseds, softwareNameAndVersion)
+		} else if service == (SERVICE_NAME_GENDER) {
+			genders, _ := tools.processGenderFull(values)
+			tools.appendX(writer, outputHeaders, tools.personalNamesIn, genders, softwareNameAndVersion)
+		} else if service == (SERVICE_NAME_COUNTRY) {
+			countrieds, _ := tools.processCountry(values)
+			tools.appendX(writer, outputHeaders, tools.personalNamesIn, countrieds, softwareNameAndVersion)
+		}
+		tools.personalNamesIn = make(map[string]namsorapi.PersonalNameIn)
+	}
 }
 
 func (tools *NamrSorTools) appendX(writer *bufio.Writer, outputHeaders []string, inp map[string]interface{}, output map[string]interface{}, softwareNameAndVersion string) {
