@@ -4,12 +4,17 @@ import (
 	"bufio"
 	"crypto/md5"
 	"encoding/hex"
+	"errors"
 	"flag"
 	"github.com/antihax/optional"
 	namsorapi "github.com/namsor/namsor-golang-sdk2"
 	"golang.org/x/net/context"
 	"hash"
+	"io"
+	"log"
 	"reflect"
+	"strconv"
+	"strings"
 )
 
 const DEFAULT_DIGEST_ALGO string = "MD5"
@@ -19,19 +24,22 @@ const INPUT_DATA_FORMAT_FNLN string = "fnln"
 const INPUT_DATA_FORMAT_FNLNGEO string = "fnlngeo"
 const INPUT_DATA_FORMAT_FULLNAME string = "name"
 const INPUT_DATA_FORMAT_FULLNAMEGEO string = "namegeo"
+const INPUT_DATA_FORMAT_FNLNPHONE string = "fnlnphone"
 
-var INPUT_DATA_FORMAT = [4]string{
+var INPUT_DATA_FORMAT = [5]string{
 	INPUT_DATA_FORMAT_FNLN,
 	INPUT_DATA_FORMAT_FNLNGEO,
 	INPUT_DATA_FORMAT_FULLNAME,
 	INPUT_DATA_FORMAT_FULLNAMEGEO,
+	INPUT_DATA_FORMAT_FNLNPHONE,
 }
 
-var INPUT_DATA_FORMAT_HEADER = [4][]string{
+var INPUT_DATA_FORMAT_HEADER = [5][]string{
 	{"firstName", "lastName"},
 	{"firstName", "lastName", "countryIso2"},
 	{"fullName"},
 	{"fullName", "countryIso2"},
+	{"firstName", "lastName", "phone"},
 }
 
 const SERVICE_NAME_PARSE string = "parse"
@@ -136,6 +144,9 @@ var (
 	encoding        string
 )
 
+var uidGen int = 0
+var rowId int = 0
+
 type NamrSorTools struct {
 	done                        []string
 	separatorOut                string
@@ -168,6 +179,7 @@ func NewNamSorTools() *NamrSorTools {
 		socialApi:                   client.SocialApi,
 		TIMEOUT:                     30000,
 		digest:                      nil,
+		skipErrors:                  false,
 		recover:                     recover,
 		firstLastNamesGeoIn:         map[string]namsorapi.FirstLastNameGeoIn{},
 		firstLastNamesIn:            map[string]namsorapi.FirstLastNameIn{},
@@ -205,6 +217,21 @@ func NewNamSorTools() *NamrSorTools {
 	return tools
 }
 
+/*
+	Support functions
+*/
+func contains(s []string, str string) bool {
+	for _, v := range s {
+		if v == str {
+			return true
+		}
+	}
+	return false
+}
+
+/*
+	Getters
+*/
 func (tools *NamrSorTools) isWithUID() bool {
 	return tools.withUID
 }
@@ -544,6 +571,173 @@ func (tools *NamrSorTools) processData(service string, outputHeaders []string, w
 		}
 		tools.firstLastNamesPhoneNumberIn = make(map[string]namsorapi.FirstLastNamePhoneNumberIn)
 	}
+}
+
+/*
+	Data processing
+*/
+func (tools *NamrSorTools) process(service string, reader *bufio.Reader, writer *bufio.Writer, softwareNameAndVersion string) error {
+	var lineId int = 0
+	inputDataFormat = tools.getCommandLineOptions()["inputDataFormat"].(string)
+	var inputHeaders []string = nil
+	for i, val := range INPUT_DATA_FORMAT {
+		if val == inputDataFormat {
+			inputHeaders = INPUT_DATA_FORMAT_HEADER[i]
+			break
+		}
+	}
+	if inputHeaders == nil {
+		return errors.New("Invalid inputFileFormat " + inputDataFormat)
+	}
+	var outputHeaders []string = nil
+	for i, val := range SERVICES {
+		if val == service {
+			outputHeaders = OUTPUT_DATA_HEADERS[i]
+			break
+		}
+	}
+	if outputHeaders == nil {
+		return errors.New("Invalid service " + service)
+	}
+	var appendHeader bool = tools.getCommandLineOptions()["header"].(bool)
+	if appendHeader && !tools.isRecover() || (tools.isRecover() && len(tools.done) == 0) {
+		// don't append a header to an existing file
+		tools.appendHeader(writer, inputHeaders, outputHeaders)
+	}
+	var dataLenExpected int = len(inputHeaders)
+	if tools.withUID {
+		dataLenExpected += 1
+	}
+	dataFormatExpected := ""
+	if tools.isWithUID() {
+		dataFormatExpected += "uid" + tools.separatorIn
+	}
+	countryIso2Default := tools.getCommandLineOptions()["countryIso2Default"].(string)
+
+	for i, val := range inputHeaders {
+		dataFormatExpected += val
+		if i < len(inputHeaders)-1 {
+			dataFormatExpected += tools.separatorIn
+		}
+	}
+
+	line, err := reader.ReadString('\n')
+	if err != nil && err != io.EOF {
+		return err
+	}
+	for line != "" {
+		if strings.HasPrefix(line, "#") {
+			if strings.HasSuffix(line, "|") {
+				line = line + " "
+			}
+			lineData := strings.Split(line, "|")
+			if len(lineData) != dataLenExpected {
+				if tools.skipErrors {
+					log.Println("Line " + strconv.Itoa(lineId) + ", expected input with format : " + dataFormatExpected + " line = " + line)
+					lineId++
+					line, err = reader.ReadString('\n')
+					if err != nil && err != io.EOF {
+						return err
+					}
+					continue
+				} else {
+					return errors.New("Line " + strconv.Itoa(lineId) + ", expected input with format : " + dataFormatExpected + " line = " + line)
+				}
+			}
+			var uId string = ""
+			var col int = 0
+			if tools.isWithUID() {
+				uId = lineData[col]
+				col += 1
+			} else {
+				uId = "uid" + strconv.Itoa(uidGen)
+				uidGen += 1
+			}
+			if tools.isRecover() && contains(tools.done, uId) {
+				// skip this, as it's already done
+			} else {
+				if inputDataFormat == (INPUT_DATA_FORMAT_FNLN) {
+					firstName := lineData[col]
+					col += 1
+					lastName := lineData[col]
+					col += 1
+					firstLastNameIn := namsorapi.FirstLastNameIn{
+						uId,
+						firstName,
+						lastName,
+					}
+					tools.firstLastNamesIn[uId] = firstLastNameIn
+				} else if inputDataFormat == (INPUT_DATA_FORMAT_FNLNGEO) {
+					firstName := lineData[col]
+					col += 1
+					lastName := lineData[col]
+					col += 1
+					countryIso2 := lineData[col]
+					col += 1
+					if (strings.Trim(countryIso2, " ") == "") && countryIso2Default != "" {
+						countryIso2 = countryIso2Default
+					}
+					firstLastNameGeoIn := namsorapi.FirstLastNameGeoIn{
+						uId,
+						firstName,
+						lastName,
+						countryIso2,
+					}
+					tools.firstLastNamesGeoIn[uId] = firstLastNameGeoIn
+				} else if inputDataFormat == (INPUT_DATA_FORMAT_FULLNAME) {
+					fullName := lineData[col]
+					col += 1
+					personalNameIn := namsorapi.PersonalNameIn{
+						uId,
+						fullName,
+					}
+					tools.personalNamesIn[uId] = personalNameIn
+				} else if inputDataFormat == (INPUT_DATA_FORMAT_FULLNAMEGEO) {
+					fullName := lineData[col]
+					col += 1
+					countryIso2 := lineData[col]
+					col += 1
+					if (strings.Trim(countryIso2, " ") == "") && countryIso2Default != "" {
+						countryIso2 = countryIso2Default
+					}
+					personalNameGeoIn := namsorapi.PersonalNameGeoIn{
+						uId,
+						fullName,
+						countryIso2,
+					}
+					tools.personalNamesGeoIn[uId] = personalNameGeoIn
+				} else if inputDataFormat == (INPUT_DATA_FORMAT_FNLNPHONE) {
+					firstName := lineData[col]
+					col += 1
+					lastName := lineData[col]
+					col += 1
+					phoneNumber := lineData[col]
+					col += 1
+					firstLastNamePhoneNumberIn := namsorapi.FirstLastNamePhoneNumberIn{
+						uId,
+						firstName,
+						lastName,
+						phoneNumber,
+						nil,
+					}
+
+					tools.firstLastNamesPhoneNumberIn[uId] = firstLastNamePhoneNumberIn
+				}
+				tools.processData(service, outputHeaders, writer, false, softwareNameAndVersion)
+			}
+		}
+		lineId += 1
+		line, err = reader.ReadString('\n')
+		if err != nil && err != io.EOF {
+			return err
+		}
+	}
+	tools.processData(service, outputHeaders, writer, true, softwareNameAndVersion)
+	err = writer.Flush()
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (tools *NamrSorTools) appendX(writer *bufio.Writer, outputHeaders []string, inp interface{}, inpType reflect.Type, output interface{}, outputType reflect.Type, softwareNameAndVersion string) {
