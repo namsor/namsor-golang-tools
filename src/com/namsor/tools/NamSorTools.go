@@ -443,56 +443,59 @@ func (tools *NamrSorTools) processPhoneCode(names []namsorapi.FirstLastNamePhone
 */
 func (tools *NamrSorTools) processData(service string, outputHeaders []string, writer *bufio.Writer, flushBuffers bool, softwareNameAndVersion string) {
 	if flushBuffers && len(tools.firstLastNamesIn) != 0 || len(tools.firstLastNamesIn) >= BATCH_SIZE {
+		inpType := reflect.TypeOf(namsorapi.FirstLastNameIn{})
 		values := []namsorapi.FirstLastNameIn{}
 		for _, v := range tools.firstLastNamesIn {
 			values = append(values, v)
 		}
 		if service == SERVICE_NAME_ORIGIN {
 			origins, _ := tools.processOrigin(values)
-			tools.appendX(writer, outputHeaders, tools.firstLastNamesIn, origins, softwareNameAndVersion)
+			tools.appendX(writer, outputHeaders, tools.firstLastNamesIn, inpType, origins, reflect.TypeOf(namsorapi.FirstLastNameOriginedOut{}), softwareNameAndVersion)
 		} else if service == SERVICE_NAME_GENDER {
 			genders, _ := tools.processGender(values)
-			tools.appendX(writer, outputHeaders, tools.firstLastNamesIn, genders, softwareNameAndVersion)
+			tools.appendX(writer, outputHeaders, tools.firstLastNamesIn, inpType, genders, reflect.TypeOf(namsorapi.FirstLastNameGenderedOut{}), softwareNameAndVersion)
 		} else if service == SERVICE_NAME_COUNTRY {
 			countrieds, _ := tools.processCountryAdapted(values)
-			tools.appendX(writer, outputHeaders, tools.firstLastNamesIn, countrieds, softwareNameAndVersion)
+			tools.appendX(writer, outputHeaders, tools.firstLastNamesIn, inpType, countrieds, reflect.TypeOf(namsorapi.PersonalNameGeoOut{}), softwareNameAndVersion)
 		}
 		tools.firstLastNamesIn = make(map[string]namsorapi.FirstLastNameIn)
 	}
 	if flushBuffers && len(tools.firstLastNamesGeoIn) != 0 || len(tools.firstLastNamesGeoIn) >= BATCH_SIZE {
+		inpType := reflect.TypeOf(namsorapi.FirstLastNameGeoIn{})
 		values := []namsorapi.FirstLastNameGeoIn{}
 		for _, v := range tools.firstLastNamesGeoIn {
 			values = append(values, v)
 		}
 		if service == (SERVICE_NAME_ORIGIN) {
 			origins, _ := tools.processOriginGeo(values)
-			tools.appendX(writer, outputHeaders, tools.firstLastNamesGeoIn, origins, softwareNameAndVersion)
+			tools.appendX(writer, outputHeaders, tools.firstLastNamesGeoIn, inpType, origins, reflect.TypeOf(namsorapi.FirstLastNameOriginedOut{}), softwareNameAndVersion)
 		} else if service == (SERVICE_NAME_GENDER) {
 			genders, _ := tools.processGenderGeo(values)
-			tools.appendX(writer, outputHeaders, tools.firstLastNamesGeoIn, genders, softwareNameAndVersion)
+			tools.appendX(writer, outputHeaders, tools.firstLastNamesGeoIn, inpType, genders, reflect.TypeOf(namsorapi.FirstLastNameGenderedOut{}), softwareNameAndVersion)
 		} else if service == (SERVICE_NAME_DIASPORA) {
 			diasporas, _ := tools.processDiaspora(values)
-			tools.appendX(writer, outputHeaders, tools.firstLastNamesGeoIn, diasporas, softwareNameAndVersion)
+			tools.appendX(writer, outputHeaders, tools.firstLastNamesGeoIn, inpType, diasporas, reflect.TypeOf(namsorapi.FirstLastNameDiasporaedOut{}), softwareNameAndVersion)
 		} else if service == (SERVICE_NAME_USRACEETHNICITY) {
 			usRaceEthnicities, _ := tools.processUSRaceEthnicity(values)
-			tools.appendX(writer, outputHeaders, tools.firstLastNamesGeoIn, usRaceEthnicities, softwareNameAndVersion)
+			tools.appendX(writer, outputHeaders, tools.firstLastNamesGeoIn, inpType, usRaceEthnicities, reflect.TypeOf(namsorapi.FirstLastNameUsRaceEthnicityOut{}), softwareNameAndVersion)
 		}
 		tools.firstLastNamesGeoIn = make(map[string]namsorapi.FirstLastNameGeoIn)
 	}
 	if flushBuffers && len(tools.personalNamesIn) != 0 || len(tools.personalNamesIn) >= BATCH_SIZE {
+		inpType := reflect.TypeOf(namsorapi.PersonalNameIn{})
 		values := []namsorapi.PersonalNameIn{}
 		for _, v := range tools.personalNamesIn {
 			values = append(values, v)
 		}
 		if service == (SERVICE_NAME_PARSE) {
 			parseds, _ := tools.processParse(values)
-			tools.appendX(writer, outputHeaders, tools.personalNamesIn, parseds, softwareNameAndVersion)
+			tools.appendX(writer, outputHeaders, tools.personalNamesIn, inpType, parseds, reflect.TypeOf(namsorapi.PersonalNameParsedOut{}), softwareNameAndVersion)
 		} else if service == (SERVICE_NAME_GENDER) {
 			genders, _ := tools.processGenderFull(values)
-			tools.appendX(writer, outputHeaders, tools.personalNamesIn, genders, softwareNameAndVersion)
+			tools.appendX(writer, outputHeaders, tools.personalNamesIn, inpType, genders, reflect.TypeOf(namsorapi.PersonalNameGenderedOut{}), softwareNameAndVersion)
 		} else if service == (SERVICE_NAME_COUNTRY) {
 			countrieds, _ := tools.processCountry(values)
-			tools.appendX(writer, outputHeaders, tools.personalNamesIn, countrieds, softwareNameAndVersion)
+			tools.appendX(writer, outputHeaders, tools.personalNamesIn, inpType, countrieds, reflect.TypeOf(namsorapi.PersonalNameGeoOut{}), softwareNameAndVersion)
 		}
 		tools.personalNamesIn = make(map[string]namsorapi.PersonalNameIn)
 	}
