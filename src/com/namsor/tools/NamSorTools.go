@@ -497,7 +497,7 @@ func (tools *NamrSorTools) processData(service string, outputHeaders []string, w
 	}
 }
 
-func (tools *NamrSorTools) appendX(writer *bufio.Writer, outputHeaders []string, inp map[string]interface{}, output map[string]interface{}, softwareNameAndVersion string) {
+func (tools *NamrSorTools) appendX(writer *bufio.Writer, outputHeaders []string, inp interface{}, output interface{}, softwareNameAndVersion string) {
 
 }
 
