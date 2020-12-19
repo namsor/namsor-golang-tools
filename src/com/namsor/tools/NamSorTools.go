@@ -39,6 +39,7 @@ const SERVICE_NAME_GENDER string = "gender"
 const SERVICE_NAME_ORIGIN string = "origin"
 const SERVICE_NAME_COUNTRY string = "country"
 const SERVICE_NAME_DIASPORA string = "diaspora"
+const SERVICE_NAME_PHONECODE string = "phonecode"
 const SERVICE_NAME_USRACEETHNICITY string = "usraceethnicity"
 
 var SERVICES = []string{
@@ -47,6 +48,7 @@ var SERVICES = []string{
 	SERVICE_NAME_ORIGIN,
 	SERVICE_NAME_COUNTRY,
 	SERVICE_NAME_DIASPORA,
+	SERVICE_NAME_PHONECODE,
 	SERVICE_NAME_USRACEETHNICITY,
 }
 
@@ -96,6 +98,19 @@ var OUTPUT_DATA_USRACEETHNICITY_HEADER = []string{
 	"raceEthnicityScore",
 	"script",
 }
+var OUTPUT_DATA_PHONECODE_HEADER = []string{
+	"internationalPhoneNumberVerified",
+	"phoneCountryIso2Verified",
+	"phoneCountryCode",
+	"phoneCountryCodeAlt",
+	"phoneCountryIso2",
+	"phoneCountryIso2Alt",
+	"originCountryIso2",
+	"originCountryIso2Alt",
+	"verified",
+	"score",
+	"script",
+}
 var OUTPUT_DATA_HEADERS = [][]string{
 	OUTPUT_DATA_PARSE_HEADER,
 	OUTPUT_DATA_GENDER_HEADER,
@@ -103,6 +118,7 @@ var OUTPUT_DATA_HEADERS = [][]string{
 	OUTPUT_DATA_COUNTRY_HEADER,
 	OUTPUT_DATA_DIASPORA_HEADER,
 	OUTPUT_DATA_USRACEETHNICITY_HEADER,
+	OUTPUT_DATA_PHONECODE_HEADER,
 }
 
 var (
@@ -121,41 +137,43 @@ var (
 )
 
 type NamrSorTools struct {
-	done                []string
-	separatorOut        string
-	separatorIn         string
-	auth                context.Context
-	personalApi         *namsorapi.PersonalApiService
-	adminApi            *namsorapi.AdminApiService
-	socialApi           *namsorapi.SocialApiService
-	TIMEOUT             int
-	withUID             bool
-	recover             bool
-	skipErrors          bool
-	digest              hash.Hash
-	commandLineOptions  map[string]interface{}
-	firstLastNamesGeoIn map[string]namsorapi.FirstLastNameGeoIn
-	firstLastNamesIn    map[string]namsorapi.FirstLastNameIn
-	personalNamesIn     map[string]namsorapi.PersonalNameIn
-	personalNamesGeoIn  map[string]namsorapi.PersonalNameGeoIn
+	done                        []string
+	separatorOut                string
+	separatorIn                 string
+	auth                        context.Context
+	personalApi                 *namsorapi.PersonalApiService
+	adminApi                    *namsorapi.AdminApiService
+	socialApi                   *namsorapi.SocialApiService
+	TIMEOUT                     int
+	withUID                     bool
+	recover                     bool
+	skipErrors                  bool
+	digest                      hash.Hash
+	commandLineOptions          map[string]interface{}
+	firstLastNamesGeoIn         map[string]namsorapi.FirstLastNameGeoIn
+	firstLastNamesIn            map[string]namsorapi.FirstLastNameIn
+	personalNamesIn             map[string]namsorapi.PersonalNameIn
+	personalNamesGeoIn          map[string]namsorapi.PersonalNameGeoIn
+	firstLastNamesPhoneNumberIn map[string]namsorapi.FirstLastNamePhoneNumberIn
 }
 
 func NewNamSorTools() *NamrSorTools {
 	config := namsorapi.NewConfiguration()
 	client := namsorapi.NewAPIClient(config)
 	tools := &NamrSorTools{
-		separatorIn:         "|",
-		separatorOut:        "|",
-		adminApi:            client.AdminApi,
-		personalApi:         client.PersonalApi,
-		socialApi:           client.SocialApi,
-		TIMEOUT:             30000,
-		digest:              nil,
-		recover:             recover,
-		firstLastNamesGeoIn: map[string]namsorapi.FirstLastNameGeoIn{},
-		firstLastNamesIn:    map[string]namsorapi.FirstLastNameIn{},
-		personalNamesIn:     map[string]namsorapi.PersonalNameIn{},
-		personalNamesGeoIn:  map[string]namsorapi.PersonalNameGeoIn{},
+		separatorIn:                 "|",
+		separatorOut:                "|",
+		adminApi:                    client.AdminApi,
+		personalApi:                 client.PersonalApi,
+		socialApi:                   client.SocialApi,
+		TIMEOUT:                     30000,
+		digest:                      nil,
+		recover:                     recover,
+		firstLastNamesGeoIn:         map[string]namsorapi.FirstLastNameGeoIn{},
+		firstLastNamesIn:            map[string]namsorapi.FirstLastNameIn{},
+		personalNamesIn:             map[string]namsorapi.PersonalNameIn{},
+		personalNamesGeoIn:          map[string]namsorapi.PersonalNameGeoIn{},
+		firstLastNamesPhoneNumberIn: map[string]namsorapi.FirstLastNamePhoneNumberIn{},
 		commandLineOptions: map[string]interface{}{
 			"apiKey":          apiKey,
 			"inputFile":       inputFile,
@@ -498,6 +516,33 @@ func (tools *NamrSorTools) processData(service string, outputHeaders []string, w
 			tools.appendX(writer, outputHeaders, tools.personalNamesIn, inpType, countrieds, reflect.TypeOf(namsorapi.PersonalNameGeoOut{}), softwareNameAndVersion)
 		}
 		tools.personalNamesIn = make(map[string]namsorapi.PersonalNameIn)
+	}
+	if flushBuffers && len(tools.personalNamesGeoIn) != 0 || len(tools.personalNamesGeoIn) >= BATCH_SIZE {
+		inpType := reflect.TypeOf(namsorapi.PersonalNameGeoIn{})
+		values := []namsorapi.PersonalNameGeoIn{}
+		for _, v := range tools.personalNamesGeoIn {
+			values = append(values, v)
+		}
+		if service == (SERVICE_NAME_PARSE) {
+			parseds, _ := tools.processParseGeo(values)
+			tools.appendX(writer, outputHeaders, tools.personalNamesGeoIn, inpType, parseds, reflect.TypeOf(namsorapi.PersonalNameParsedOut{}), softwareNameAndVersion)
+		} else if service == (SERVICE_NAME_GENDER) {
+			genders, _ := tools.processGenderFullGeo(values)
+			tools.appendX(writer, outputHeaders, tools.personalNamesGeoIn, inpType, genders, reflect.TypeOf(namsorapi.PersonalNameGenderedOut{}), softwareNameAndVersion)
+		}
+		tools.personalNamesGeoIn = make(map[string]namsorapi.PersonalNameGeoIn)
+	}
+	if flushBuffers && len(tools.firstLastNamesPhoneNumberIn) != 0 || len(tools.firstLastNamesPhoneNumberIn) >= BATCH_SIZE {
+		inpType := reflect.TypeOf(namsorapi.FirstLastNamePhoneNumberIn{})
+		values := []namsorapi.FirstLastNamePhoneNumberIn{}
+		for _, v := range tools.firstLastNamesPhoneNumberIn {
+			values = append(values, v)
+		}
+		if service == (SERVICE_NAME_PHONECODE) {
+			phoneCodes, _ := tools.processPhoneCode(values)
+			tools.appendX(writer, outputHeaders, tools.firstLastNamesPhoneNumberIn, inpType, phoneCodes, reflect.TypeOf(namsorapi.FirstLastNamePhoneCodedOut{}), softwareNameAndVersion)
+		}
+		tools.firstLastNamesPhoneNumberIn = make(map[string]namsorapi.FirstLastNamePhoneNumberIn)
 	}
 }
 
