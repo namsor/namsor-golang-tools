@@ -9,6 +9,7 @@ import (
 	namsorapi "github.com/namsor/namsor-golang-sdk2"
 	"golang.org/x/net/context"
 	"hash"
+	"reflect"
 )
 
 const DEFAULT_DIGEST_ALGO string = "MD5"
@@ -497,7 +498,7 @@ func (tools *NamrSorTools) processData(service string, outputHeaders []string, w
 	}
 }
 
-func (tools *NamrSorTools) appendX(writer *bufio.Writer, outputHeaders []string, inp interface{}, output interface{}, softwareNameAndVersion string) {
+func (tools *NamrSorTools) appendX(writer *bufio.Writer, outputHeaders []string, inp interface{}, inpType reflect.Type, output interface{}, outputType reflect.Type, softwareNameAndVersion string) {
 
 }
 
