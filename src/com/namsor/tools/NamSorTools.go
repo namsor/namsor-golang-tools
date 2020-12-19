@@ -1,14 +1,14 @@
 package main
 
 import (
+	"bufio"
 	"crypto/md5"
 	"encoding/hex"
 	"flag"
 	"github.com/antihax/optional"
-	"hash"
-
 	namsorapi "github.com/namsor/namsor-golang-sdk2"
 	"golang.org/x/net/context"
+	"hash"
 )
 
 const DEFAULT_DIGEST_ALGO string = "MD5"
@@ -258,6 +258,10 @@ func (tools *NamrSorTools) processOriginGeo(names []namsorapi.FirstLastNameGeoIn
 	}
 
 	return tools.processOrigin(namesNoGeo)
+}
+
+func (tools *NamrSorTools) appendX(writer *bufio.Writer, outputHeaders []string, inp map[string]interface{}, output map[string]interface{}, softwareNameAndVersion string) {
+
 }
 
 func main() {
