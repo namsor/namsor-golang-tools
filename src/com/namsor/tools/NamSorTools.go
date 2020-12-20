@@ -355,7 +355,7 @@ func (tools *NamrSorTools) run() error {
 		return errors.New(errR.Error())
 	}
 
-	outFile, err := os.OpenFile(outputFile, os.O_CREATE, 0660)
+	outFile, err := os.OpenFile(outputFile, os.O_CREATE|os.O_TRUNC, 0660)
 	if err != nil {
 		logger.Fatal(err.Error())
 		return errors.New(err.Error())
