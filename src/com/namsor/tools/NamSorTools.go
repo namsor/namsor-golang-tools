@@ -15,7 +15,6 @@ import (
 	"golang.org/x/net/context"
 	"hash"
 	"io"
-	"log"
 	"os"
 	"reflect"
 	"strconv"
@@ -175,14 +174,20 @@ type NamrSorTools struct {
 }
 
 func NewNamSorTools() *NamrSorTools {
+	if apiKey == "" {
+		return nil
+	}
 	config := namsorapi.NewConfiguration()
 	client := namsorapi.NewAPIClient(config)
 	tools := &NamrSorTools{
-		separatorIn:                 "|",
-		separatorOut:                "|",
-		adminApi:                    client.AdminApi,
-		personalApi:                 client.PersonalApi,
-		socialApi:                   client.SocialApi,
+		separatorIn:  "|",
+		separatorOut: "|",
+		adminApi:     client.AdminApi,
+		personalApi:  client.PersonalApi,
+		socialApi:    client.SocialApi,
+		auth: context.WithValue(context.Background(), namsorapi.ContextAPIKey, namsorapi.APIKey{
+			Key: apiKey,
+		}),
 		TIMEOUT:                     30000,
 		digest:                      nil,
 		skipErrors:                  false,
@@ -210,14 +215,6 @@ func NewNamSorTools() *NamrSorTools {
 
 	if digest {
 		tools.digest = md5.New()
-	}
-
-	if apiKey != "" {
-		tools.auth = context.WithValue(context.Background(), namsorapi.ContextAPIKey, namsorapi.APIKey{
-			Key: apiKey,
-		})
-	} else {
-		print("Error! No API Key Provided!")
 	}
 
 	return tools
@@ -843,14 +840,14 @@ func (tools *NamrSorTools) process(service string, reader *bufio.Reader, writer 
 		return err
 	}
 	for line != "" {
-		if strings.HasPrefix(line, "#") {
+		if !strings.HasPrefix(line, "#") {
 			if strings.HasSuffix(line, "|") {
 				line = line + " "
 			}
 			lineData := strings.Split(line, "|")
 			if len(lineData) != dataLenExpected {
 				if tools.skipErrors {
-					log.Println("Line " + strconv.Itoa(lineId) + ", expected input with format : " + dataFormatExpected + " line = " + line) // todo change to new logger
+					logger.Warn("Line " + strconv.Itoa(lineId) + ", expected input with format : " + dataFormatExpected + " line = " + line) // todo change to new logger
 					lineId++
 					line, err = reader.ReadString('\n')
 					if err != nil && err != io.EOF {
@@ -1018,39 +1015,44 @@ func (tools *NamrSorTools) appendX(writer *bufio.Writer, outputHeaders []string,
 			switch inpType {
 			case reflect.TypeOf(namsorapi.FirstLastNameIn{}):
 				firstLastNameIn := inputObject.Interface().(namsorapi.FirstLastNameIn)
-				_, err = writer.WriteString(tools.digestText(firstLastNameIn.FirstName+separatorOut) + separatorOut + tools.digestText(firstLastNameIn.LastName) + separatorOut)
+				_, err = writer.WriteString(tools.digestText(firstLastNameIn.FirstName) + separatorOut + tools.digestText(firstLastNameIn.LastName) + separatorOut)
 				if err != nil {
 					logger.Fatal(err.Error())
 					return errors.New(err.Error())
 				}
+				break
 			case reflect.TypeOf(namsorapi.FirstLastNameGeoIn{}):
 				firstLastNameGeoIn := inputObject.Interface().(namsorapi.FirstLastNameGeoIn)
-				_, err = writer.WriteString(tools.digestText(firstLastNameGeoIn.FirstName+separatorOut) + separatorOut + tools.digestText(firstLastNameGeoIn.LastName) + separatorOut + firstLastNameGeoIn.CountryIso2 + separatorOut)
+				_, err = writer.WriteString(tools.digestText(firstLastNameGeoIn.FirstName) + separatorOut + tools.digestText(firstLastNameGeoIn.LastName) + separatorOut + firstLastNameGeoIn.CountryIso2 + separatorOut)
 				if err != nil {
 					logger.Fatal(err.Error())
 					return errors.New(err.Error())
 				}
+				break
 			case reflect.TypeOf(namsorapi.PersonalNameIn{}):
 				personalNameIn := inputObject.Interface().(namsorapi.PersonalNameIn)
-				_, err = writer.WriteString(tools.digestText(personalNameIn.Name + separatorOut))
+				_, err = writer.WriteString(tools.digestText(personalNameIn.Name) + separatorOut)
 				if err != nil {
 					logger.Fatal(err.Error())
 					return errors.New(err.Error())
 				}
+				break
 			case reflect.TypeOf(namsorapi.PersonalNameGeoIn{}):
 				personalNameGeoIn := inputObject.Interface().(namsorapi.PersonalNameGeoIn)
-				_, err = writer.WriteString(tools.digestText(personalNameGeoIn.Name + separatorOut + personalNameGeoIn.CountryIso2 + separatorOut))
+				_, err = writer.WriteString(tools.digestText(personalNameGeoIn.Name) + separatorOut + personalNameGeoIn.CountryIso2 + separatorOut)
 				if err != nil {
 					logger.Fatal(err.Error())
 					return errors.New(err.Error())
 				}
+				break
 			case reflect.TypeOf(namsorapi.FirstLastNamePhoneNumberIn{}):
 				firstLastNamePhoneNumberIn := inputObject.Interface().(namsorapi.FirstLastNamePhoneNumberIn)
-				_, err = writer.WriteString(tools.digestText(firstLastNamePhoneNumberIn.FirstName + separatorOut + firstLastNamePhoneNumberIn.LastName + separatorOut + firstLastNamePhoneNumberIn.PhoneNumber + separatorOut))
+				_, err = writer.WriteString(tools.digestText(firstLastNamePhoneNumberIn.FirstName) + separatorOut + tools.digestText(firstLastNamePhoneNumberIn.LastName) + separatorOut + tools.digestText(firstLastNamePhoneNumberIn.PhoneNumber) + separatorOut)
 				if err != nil {
 					logger.Fatal(err.Error())
 					return errors.New(err.Error())
 				}
+				break
 			default:
 				logger.Fatal("Invalid input type")
 				return errors.New(fmt.Sprintf("Invalid input type : %s ", inpType.Name()))
@@ -1065,7 +1067,6 @@ func (tools *NamrSorTools) appendX(writer *bufio.Writer, outputHeaders []string,
 					}
 				}
 			} else {
-
 				switch outputType {
 				case reflect.TypeOf(namsorapi.FirstLastNameGenderedOut{}):
 					firstLastNameGenderedOut := outputObject.Interface().(namsorapi.FirstLastNameGenderedOut)
@@ -1079,6 +1080,7 @@ func (tools *NamrSorTools) appendX(writer *bufio.Writer, outputHeaders []string,
 						logger.Fatal(err.Error())
 						return errors.New(err.Error())
 					}
+					break
 				case reflect.TypeOf(namsorapi.FirstLastNameOriginedOut{}):
 					firstLastNameOriginedOut := outputObject.Interface().(namsorapi.FirstLastNameOriginedOut)
 					scriptName := tools.computeScriptFirst(firstLastNameOriginedOut.LastName)
@@ -1092,6 +1094,7 @@ func (tools *NamrSorTools) appendX(writer *bufio.Writer, outputHeaders []string,
 						logger.Fatal(err.Error())
 						return errors.New(err.Error())
 					}
+					break
 				case reflect.TypeOf(namsorapi.FirstLastNameDiasporaedOut{}):
 					firstLastNameDiasporaedOut := outputObject.Interface().(namsorapi.FirstLastNameDiasporaedOut)
 					scriptName := tools.computeScriptFirst(firstLastNameDiasporaedOut.LastName)
@@ -1103,6 +1106,7 @@ func (tools *NamrSorTools) appendX(writer *bufio.Writer, outputHeaders []string,
 						logger.Fatal(err.Error())
 						return errors.New(err.Error())
 					}
+					break
 				case reflect.TypeOf(namsorapi.FirstLastNameUsRaceEthnicityOut{}):
 					firstLastNameUsRaceEthnicityOut := outputObject.Interface().(namsorapi.FirstLastNameUsRaceEthnicityOut)
 					scriptName := tools.computeScriptFirst(firstLastNameUsRaceEthnicityOut.LastName)
@@ -1116,6 +1120,7 @@ func (tools *NamrSorTools) appendX(writer *bufio.Writer, outputHeaders []string,
 						logger.Fatal(err.Error())
 						return errors.New(err.Error())
 					}
+					break
 				case reflect.TypeOf(namsorapi.PersonalNameGenderedOut{}):
 					personalNameGenderedOut := outputObject.Interface().(namsorapi.PersonalNameGenderedOut)
 					scriptName := tools.computeScriptFirst(personalNameGenderedOut.Name)
@@ -1127,6 +1132,7 @@ func (tools *NamrSorTools) appendX(writer *bufio.Writer, outputHeaders []string,
 						logger.Fatal(err.Error())
 						return errors.New(err.Error())
 					}
+					break
 				case reflect.TypeOf(namsorapi.PersonalNameGeoOut{}):
 					personalNameGeoOut := outputObject.Interface().(namsorapi.PersonalNameGeoOut)
 					scriptName := tools.computeScriptFirst(personalNameGeoOut.Name)
@@ -1140,6 +1146,7 @@ func (tools *NamrSorTools) appendX(writer *bufio.Writer, outputHeaders []string,
 						logger.Fatal(err.Error())
 						return errors.New(err.Error())
 					}
+					break
 				case reflect.TypeOf(namsorapi.PersonalNameParsedOut{}):
 					personalNameParsedOut := outputObject.Interface().(namsorapi.PersonalNameParsedOut)
 					firstNameParsed := personalNameParsedOut.FirstLastName.FirstName
@@ -1156,6 +1163,7 @@ func (tools *NamrSorTools) appendX(writer *bufio.Writer, outputHeaders []string,
 						logger.Fatal(err.Error())
 						return errors.New(err.Error())
 					}
+					break
 				case reflect.TypeOf(namsorapi.FirstLastNamePhoneCodedOut{}):
 					firstLastNamePhoneCodedOut := outputObject.Interface().(namsorapi.FirstLastNamePhoneCodedOut)
 					scriptName := tools.computeScriptFirst(firstLastNamePhoneCodedOut.LastName)
@@ -1174,6 +1182,7 @@ func (tools *NamrSorTools) appendX(writer *bufio.Writer, outputHeaders []string,
 						logger.Fatal(err.Error())
 						return errors.New(err.Error())
 					}
+					break
 				default:
 					return errors.New(fmt.Sprintf("Invalid output type : %s ", outputType.Name()))
 				}
@@ -1220,6 +1229,9 @@ func main() {
 	flag.Parse()
 
 	tools := NewNamSorTools()
+	if tools == nil {
+		logger.Fatalf("No API key provided!")
+	}
 	err := tools.run()
 	if err != nil {
 		logger.Fatalf(err.Error())
