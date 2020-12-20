@@ -136,18 +136,18 @@ var OUTPUT_DATA_HEADERS = [][]string{
 }
 
 var (
-	apiKey          string
-	inputFile       string
-	countryIso2     string
-	outputFile      string
+	apiKey          string = ""
+	inputFile       string = ""
+	countryIso2     string = ""
+	outputFile      string = ""
 	overwrite       bool
 	recover         bool
-	inputDataFormat string
+	inputDataFormat string = ""
 	header          bool
 	uid             bool
 	digest          bool
-	service         string
-	encoding        string
+	service         string = ""
+	encoding        string = ""
 )
 
 var uidGen int = 0
