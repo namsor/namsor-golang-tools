@@ -6,15 +6,20 @@ import (
 	"encoding/hex"
 	"errors"
 	"flag"
+	"fmt"
 	"github.com/antihax/optional"
 	namsorapi "github.com/namsor/namsor-golang-sdk2"
+	"github.com/paulrosania/go-charset/charset"
+	logger "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"hash"
 	"io"
 	"log"
+	"os"
 	"reflect"
 	"strconv"
 	"strings"
+	"unicode"
 )
 
 const DEFAULT_DIGEST_ALGO string = "MD5"
@@ -248,6 +253,139 @@ func (tools *NamrSorTools) getCommandLineOptions() map[string]interface{} {
 	return tools.commandLineOptions
 }
 
+func (tools *NamrSorTools) run() error {
+	if apiKey == "" {
+		return errors.New("missing api-key")
+	}
+	softwareNameAndVersion, _, err := tools.adminApi.SoftwareVersion(context.Background())
+	if err != nil {
+		logger.Fatalf(err.Error())
+		return errors.New(fmt.Sprintf("can't get api-version %s", err.Error()))
+	}
+
+	service := tools.commandLineOptions["service"].(string)
+	inputFileName := tools.commandLineOptions["inputFile"].(string)
+	if inputFileName == "" {
+		return errors.New("missing input file")
+	}
+	inputFile, err := os.Open(inputFileName)
+	if err != nil {
+		logger.Fatal(err.Error())
+		return errors.New(err.Error())
+	}
+
+	outputFileName := tools.commandLineOptions["outputFile"].(string)
+	if outputFileName == "" {
+		outputFileName = inputFileName + "." + service
+		if digest {
+			outputFileName += ".digest"
+		}
+		outputFileName += ".namsor"
+		logger.Info(fmt.Sprintf("Outputing to %s", outputFileName))
+	}
+
+	outputFileExists := false
+	outputFileOverwrite := tools.commandLineOptions["overwrite"].(bool)
+	if _, err := os.Stat(outputFileName); err == nil {
+		if !outputFileOverwrite && !tools.isRecover() {
+			return errors.New(fmt.Sprintf("OutputFile %s already exsists, user -r to recover and continue job", inputFileName))
+		}
+		outputFileExists = true
+	}
+	if outputFileOverwrite && tools.isRecover() {
+		return errors.New(fmt.Sprintf("You can overwrite OR  recover to %s", outputFileName))
+	}
+	if tools.isRecover() && !tools.isWithUID() {
+		return errors.New(fmt.Sprintf("You can't recover without a uid %s", outputFileName))
+	}
+	if encoding == "" {
+		encoding = "UTF-8"
+	}
+
+	if tools.isRecover() && outputFileExists {
+		logger.Infof("Recovering from existing %s", outputFileName)
+		outFile, err := os.Open(outputFile)
+		if err != nil {
+			logger.Fatal(err.Error())
+			return errors.New(err.Error())
+		}
+		r, err := charset.NewReader(encoding, io.Reader(outFile))
+		if err != nil {
+			logger.Fatal(err.Error())
+			return errors.New(err.Error())
+		}
+		readerDone := bufio.NewReader(r)
+		doneLine, err := readerDone.ReadString('\n')
+		if err != nil {
+			logger.Fatal(err.Error())
+			return errors.New(err.Error())
+		}
+		line := 0
+		length := -1
+
+		for doneLine != "" {
+			if doneLine[0] == '#' {
+				existingData := strings.Split(doneLine, "\\|")
+				if length < 0 {
+					length = len(existingData)
+				} else if length != len(existingData) {
+					logger.Warnf("Line %d doneLine = %s len=%d!=%d", line, doneLine, len(existingData), length)
+				}
+				tools.done = append(tools.done, existingData[0])
+			}
+
+			doneLine, err = readerDone.ReadString('\n')
+			if err != nil {
+				logger.Fatal(err.Error())
+				return errors.New(err.Error())
+			}
+
+			if line%100000 == 0 {
+				logger.Infof("Loading from existing %s : %d", outputFileName, line)
+			}
+			line++
+		}
+		err = outFile.Close()
+		if err != nil {
+			return errors.New(err.Error())
+		}
+	}
+
+	r, errR := charset.NewReader(encoding, io.Reader(inputFile))
+	if errR != nil {
+		logger.Fatal(errR.Error())
+		return errors.New(errR.Error())
+	}
+
+	outFile, err := os.Open(outputFile)
+	if err != nil {
+		logger.Fatal(err.Error())
+		return errors.New(err.Error())
+	}
+	w, errW := charset.NewWriter(encoding, outFile)
+	if errW != nil {
+		logger.Fatal(errW.Error())
+		return errors.New(errW.Error())
+	}
+
+	reader := bufio.NewReader(r)
+	writer := bufio.NewWriter(w)
+
+	err = tools.process(service, reader, writer, softwareNameAndVersion.SoftwareNameAndVersion)
+	if err != nil {
+		return errors.New(err.Error())
+	}
+	err = outFile.Close()
+	if err != nil {
+		return errors.New(err.Error())
+	}
+	err = inputFile.Close()
+	if err != nil {
+		return errors.New(err.Error())
+	}
+	return nil
+}
+
 // equal to digest(string)
 func (tools *NamrSorTools) digestText(inClear string) string {
 	if tools.getDigest() == nil || inClear == "" {
@@ -255,6 +393,21 @@ func (tools *NamrSorTools) digestText(inClear string) string {
 	}
 	tools.digest.Write([]byte(inClear))
 	return hex.EncodeToString(tools.digest.Sum(nil))
+}
+
+func (tools *NamrSorTools) computeScriptFirst(someString string) string {
+	for i := 1; i < len(someString); i++ {
+		c := []rune(someString)[i]
+		if unicode.In(c, unicode.Common) {
+			continue
+		}
+		for name, table := range unicode.Categories {
+			if unicode.Is(table, c) {
+				return name
+			}
+		}
+	}
+	return ""
 }
 
 /*
@@ -633,7 +786,7 @@ func (tools *NamrSorTools) process(service string, reader *bufio.Reader, writer 
 			lineData := strings.Split(line, "|")
 			if len(lineData) != dataLenExpected {
 				if tools.skipErrors {
-					log.Println("Line " + strconv.Itoa(lineId) + ", expected input with format : " + dataFormatExpected + " line = " + line)
+					log.Println("Line " + strconv.Itoa(lineId) + ", expected input with format : " + dataFormatExpected + " line = " + line) // todo change to new logger
 					lineId++
 					line, err = reader.ReadString('\n')
 					if err != nil && err != io.EOF {
@@ -740,16 +893,57 @@ func (tools *NamrSorTools) process(service string, reader *bufio.Reader, writer 
 	return nil
 }
 
-func (tools *NamrSorTools) appendX(writer *bufio.Writer, outputHeaders []string, inp interface{}, inpType reflect.Type, output interface{}, outputType reflect.Type, softwareNameAndVersion string) {
-	flushedUID := make(map[string] bool) // Used as a set
-	inputMap:= reflect.ValueOf(inp)
+func (tools *NamrSorTools) appendHeader(writer *bufio.Writer, inputHeaders []string, outputHeaders []string) error {
+	_, err := writer.WriteString("#uid" + tools.separatorOut)
+
+	for _, inputHeader := range inputHeaders {
+		_, err := writer.WriteString(inputHeader + tools.separatorOut)
+		if err != nil {
+			logger.Fatal(err.Error())
+			return errors.New(err.Error())
+		}
+	}
+	for _, outputHeader := range outputHeaders {
+		_, err := writer.WriteString(outputHeader + tools.separatorOut)
+		if err != nil {
+			logger.Fatal(err.Error())
+			return errors.New(err.Error())
+		}
+	}
+
+	_, err = writer.WriteString("version" + tools.separatorOut)
+	if err != nil {
+		logger.Fatal(err.Error())
+		return errors.New(err.Error())
+	}
+
+	_, err = writer.WriteString("rowId" + "\n")
+	if err != nil {
+		logger.Fatal(err.Error())
+		return errors.New(err.Error())
+	}
+
+	err = writer.Flush()
+	if err != nil {
+		return errors.New(err.Error())
+	}
+	return nil
+}
+
+func (tools *NamrSorTools) appendX(writer *bufio.Writer, outputHeaders []string, inp interface{}, inpType reflect.Type, output interface{}, outputType reflect.Type, softwareNameAndVersion string) error {
+	flushedUID := make(map[string]bool) // Used as a set
+	inputMap := reflect.ValueOf(inp)
 	outputMap := reflect.ValueOf(output)
 	if inputMap.Kind() == reflect.Map && outputMap.Kind() == reflect.Map {
 		separatorOut := tools.separatorOut
-		for _,key := range inputMap.MapKeys(){
+		for _, key := range inputMap.MapKeys() {
 			uid := key.Interface().(string)
 			flushedUID[uid] = true
-			writer.WriteString(uid + separatorOut)
+			_, err := writer.WriteString(uid + separatorOut)
+			if err != nil {
+				logger.Fatal(err.Error())
+				return errors.New(err.Error())
+			}
 
 			inputObject := inputMap.MapIndex(key)
 			outputObject := outputMap.MapIndex(key)
@@ -757,55 +951,190 @@ func (tools *NamrSorTools) appendX(writer *bufio.Writer, outputHeaders []string,
 			switch inpType {
 			case reflect.TypeOf(namsorapi.FirstLastNameIn{}):
 				firstLastNameIn := inputObject.Interface().(namsorapi.FirstLastNameIn)
-				writer.WriteString(tools.digestText(firstLastNameIn.FirstName + separatorOut) + separatorOut + tools.digestText(firstLastNameIn.LastName) + separatorOut)
+				_, err = writer.WriteString(tools.digestText(firstLastNameIn.FirstName+separatorOut) + separatorOut + tools.digestText(firstLastNameIn.LastName) + separatorOut)
+				if err != nil {
+					logger.Fatal(err.Error())
+					return errors.New(err.Error())
+				}
 			case reflect.TypeOf(namsorapi.FirstLastNameGeoIn{}):
-				firstLastNameGeoIn  := inputObject.Interface().(namsorapi.FirstLastNameGeoIn)
-				writer.WriteString(tools.digestText(firstLastNameGeoIn .FirstName + separatorOut) + separatorOut + tools.digestText(firstLastNameGeoIn .LastName) + separatorOut + firstLastNameGeoIn.CountryIso2 + separatorOut)
+				firstLastNameGeoIn := inputObject.Interface().(namsorapi.FirstLastNameGeoIn)
+				_, err = writer.WriteString(tools.digestText(firstLastNameGeoIn.FirstName+separatorOut) + separatorOut + tools.digestText(firstLastNameGeoIn.LastName) + separatorOut + firstLastNameGeoIn.CountryIso2 + separatorOut)
+				if err != nil {
+					logger.Fatal(err.Error())
+					return errors.New(err.Error())
+				}
 			case reflect.TypeOf(namsorapi.PersonalNameIn{}):
-				personalNameIn  := inputObject.Interface().(namsorapi.PersonalNameIn)
-				writer.WriteString(tools.digestText(personalNameIn.Name + separatorOut) )
+				personalNameIn := inputObject.Interface().(namsorapi.PersonalNameIn)
+				_, err = writer.WriteString(tools.digestText(personalNameIn.Name + separatorOut))
+				if err != nil {
+					logger.Fatal(err.Error())
+					return errors.New(err.Error())
+				}
 			case reflect.TypeOf(namsorapi.PersonalNameGeoIn{}):
-				personalNameGeoIn  := inputObject.Interface().(namsorapi.PersonalNameGeoIn)
-				writer.WriteString(tools.digestText(personalNameGeoIn.Name + separatorOut + personalNameGeoIn.CountryIso2 + separatorOut) )
+				personalNameGeoIn := inputObject.Interface().(namsorapi.PersonalNameGeoIn)
+				_, err = writer.WriteString(tools.digestText(personalNameGeoIn.Name + separatorOut + personalNameGeoIn.CountryIso2 + separatorOut))
+				if err != nil {
+					logger.Fatal(err.Error())
+					return errors.New(err.Error())
+				}
 			case reflect.TypeOf(namsorapi.FirstLastNamePhoneNumberIn{}):
-				firstLastNamePhoneNumberIn  := inputObject.Interface().(namsorapi.FirstLastNamePhoneNumberIn)
-				writer.WriteString(tools.digestText(firstLastNamePhoneNumberIn.FirstName + separatorOut + firstLastNamePhoneNumberIn.LastName + separatorOut + firstLastNamePhoneNumberIn.PhoneNumber + separatorOut) )
+				firstLastNamePhoneNumberIn := inputObject.Interface().(namsorapi.FirstLastNamePhoneNumberIn)
+				_, err = writer.WriteString(tools.digestText(firstLastNamePhoneNumberIn.FirstName + separatorOut + firstLastNamePhoneNumberIn.LastName + separatorOut + firstLastNamePhoneNumberIn.PhoneNumber + separatorOut))
+				if err != nil {
+					logger.Fatal(err.Error())
+					return errors.New(err.Error())
+				}
 			default:
-				// todo: handle error
+				logger.Fatal("Invalid input type")
+				return errors.New(fmt.Sprintf("Invalid input type : %s ", inpType.Name()))
 			}
 
 			if output == nil {
-				for i:=0; i<len(outputHeaders); i++ {
-					writer.WriteString("" + separatorOut)
+				for i := 0; i < len(outputHeaders); i++ {
+					_, err = writer.WriteString("" + separatorOut)
+					if err != nil {
+						logger.Fatal(err.Error())
+						return errors.New(err.Error())
+					}
 				}
-			}
-			else{
+			} else {
 
 				switch outputType {
 				case reflect.TypeOf(namsorapi.FirstLastNameGenderedOut{}):
-					// todo: complete
 					firstLastNameGenderedOut := outputObject.Interface().(namsorapi.FirstLastNameGenderedOut)
-					scriptName :=
+					scriptName := tools.computeScriptFirst(firstLastNameGenderedOut.LastName)
+					_, err = writer.WriteString(firstLastNameGenderedOut.LikelyGender + separatorOut +
+						fmt.Sprintf("%f", firstLastNameGenderedOut.Score) + separatorOut +
+						fmt.Sprintf("%f", firstLastNameGenderedOut.ProbabilityCalibrated) + separatorOut +
+						fmt.Sprintf("%f", firstLastNameGenderedOut.GenderScale) + separatorOut +
+						scriptName + separatorOut)
+					if err != nil {
+						logger.Fatal(err.Error())
+						return errors.New(err.Error())
+					}
 				case reflect.TypeOf(namsorapi.FirstLastNameOriginedOut{}):
-					// todo: complete
+					firstLastNameOriginedOut := outputObject.Interface().(namsorapi.FirstLastNameOriginedOut)
+					scriptName := tools.computeScriptFirst(firstLastNameOriginedOut.LastName)
+					_, err = writer.WriteString(firstLastNameOriginedOut.CountryOrigin + separatorOut +
+						firstLastNameOriginedOut.CountryOriginAlt + separatorOut +
+						fmt.Sprintf("%f", firstLastNameOriginedOut.ProbabilityCalibrated) + separatorOut +
+						fmt.Sprintf("%f", firstLastNameOriginedOut.ProbabilityAltCalibrated) + separatorOut +
+						fmt.Sprintf("%f", firstLastNameOriginedOut.Score) + separatorOut +
+						scriptName + separatorOut)
+					if err != nil {
+						logger.Fatal(err.Error())
+						return errors.New(err.Error())
+					}
 				case reflect.TypeOf(namsorapi.FirstLastNameDiasporaedOut{}):
-					// todo: complete
+					firstLastNameDiasporaedOut := outputObject.Interface().(namsorapi.FirstLastNameDiasporaedOut)
+					scriptName := tools.computeScriptFirst(firstLastNameDiasporaedOut.LastName)
+					_, err = writer.WriteString(firstLastNameDiasporaedOut.Ethnicity + separatorOut +
+						firstLastNameDiasporaedOut.EthnicityAlt + separatorOut +
+						fmt.Sprintf("%f", firstLastNameDiasporaedOut.Score) + separatorOut +
+						scriptName + separatorOut)
+					if err != nil {
+						logger.Fatal(err.Error())
+						return errors.New(err.Error())
+					}
 				case reflect.TypeOf(namsorapi.FirstLastNameUsRaceEthnicityOut{}):
-					// todo: complete
+					firstLastNameUsRaceEthnicityOut := outputObject.Interface().(namsorapi.FirstLastNameUsRaceEthnicityOut)
+					scriptName := tools.computeScriptFirst(firstLastNameUsRaceEthnicityOut.LastName)
+					_, err = writer.WriteString(firstLastNameUsRaceEthnicityOut.RaceEthnicity + separatorOut +
+						firstLastNameUsRaceEthnicityOut.RaceEthnicityAlt + separatorOut +
+						fmt.Sprintf("%f", firstLastNameUsRaceEthnicityOut.ProbabilityCalibrated) + separatorOut +
+						fmt.Sprintf("%f", firstLastNameUsRaceEthnicityOut.ProbabilityAltCalibrated) + separatorOut +
+						fmt.Sprintf("%f", firstLastNameUsRaceEthnicityOut.Score) + separatorOut +
+						scriptName + separatorOut)
+					if err != nil {
+						logger.Fatal(err.Error())
+						return errors.New(err.Error())
+					}
 				case reflect.TypeOf(namsorapi.PersonalNameGenderedOut{}):
-					// todo: complete
+					personalNameGenderedOut := outputObject.Interface().(namsorapi.PersonalNameGenderedOut)
+					scriptName := tools.computeScriptFirst(personalNameGenderedOut.Name)
+					_, err = writer.WriteString(personalNameGenderedOut.LikelyGender + separatorOut +
+						fmt.Sprintf("%f", personalNameGenderedOut.Score) + separatorOut +
+						fmt.Sprintf("%f", personalNameGenderedOut.GenderScale) + separatorOut +
+						scriptName + separatorOut)
+					if err != nil {
+						logger.Fatal(err.Error())
+						return errors.New(err.Error())
+					}
 				case reflect.TypeOf(namsorapi.PersonalNameGeoOut{}):
-					// todo: complete
+					personalNameGeoOut := outputObject.Interface().(namsorapi.PersonalNameGeoOut)
+					scriptName := tools.computeScriptFirst(personalNameGeoOut.Name)
+					_, err = writer.WriteString(personalNameGeoOut.Country + separatorOut +
+						personalNameGeoOut.CountryAlt + separatorOut +
+						fmt.Sprintf("%f", personalNameGeoOut.ProbabilityCalibrated) + separatorOut +
+						fmt.Sprintf("%f", personalNameGeoOut.ProbabilityAltCalibrated) + separatorOut +
+						fmt.Sprintf("%f", personalNameGeoOut.Score) + separatorOut +
+						scriptName + separatorOut)
+					if err != nil {
+						logger.Fatal(err.Error())
+						return errors.New(err.Error())
+					}
 				case reflect.TypeOf(namsorapi.PersonalNameParsedOut{}):
-					// todo: complete
+					personalNameParsedOut := outputObject.Interface().(namsorapi.PersonalNameParsedOut)
+					firstNameParsed := personalNameParsedOut.FirstLastName.FirstName
+					lastNameParsed := personalNameParsedOut.FirstLastName.LastName
+					scriptName := tools.computeScriptFirst(personalNameParsedOut.Name)
+					_, err = writer.WriteString(firstNameParsed + separatorOut +
+						lastNameParsed + separatorOut +
+						personalNameParsedOut.NameParserType + separatorOut +
+						personalNameParsedOut.NameParserTypeAlt + separatorOut +
+						fmt.Sprintf("%f", personalNameParsedOut.Score) + separatorOut +
+						scriptName +
+						separatorOut)
+					if err != nil {
+						logger.Fatal(err.Error())
+						return errors.New(err.Error())
+					}
 				case reflect.TypeOf(namsorapi.FirstLastNamePhoneCodedOut{}):
-					// todo: complete
+					firstLastNamePhoneCodedOut := outputObject.Interface().(namsorapi.FirstLastNamePhoneCodedOut)
+					scriptName := tools.computeScriptFirst(firstLastNamePhoneCodedOut.LastName)
+					_, err = writer.WriteString(firstLastNamePhoneCodedOut.InternationalPhoneNumberVerified + separatorOut +
+						firstLastNamePhoneCodedOut.PhoneCountryIso2Verified + separatorOut +
+						fmt.Sprintf("%d", firstLastNamePhoneCodedOut.PhoneCountryCode) + separatorOut +
+						fmt.Sprintf("%d", firstLastNamePhoneCodedOut.PhoneCountryCodeAlt) + separatorOut +
+						firstLastNamePhoneCodedOut.PhoneCountryIso2 + separatorOut +
+						firstLastNamePhoneCodedOut.PhoneCountryIso2Alt + separatorOut +
+						firstLastNamePhoneCodedOut.OriginCountryIso2 + separatorOut +
+						firstLastNamePhoneCodedOut.OriginCountryIso2Alt + separatorOut +
+						fmt.Sprintf("%t", firstLastNamePhoneCodedOut.Verified) + separatorOut +
+						fmt.Sprintf("%f", firstLastNamePhoneCodedOut.Score) + separatorOut +
+						scriptName)
+					if err != nil {
+						logger.Fatal(err.Error())
+						return errors.New(err.Error())
+					}
 				default:
-					// todo: handle error
+					return errors.New(fmt.Sprintf("Invalid output type : %s ", outputType.Name()))
 				}
 			}
+			_, err = writer.WriteString(softwareNameAndVersion + separatorOut)
+			_, err = writer.WriteString(fmt.Sprintf("%d\n", rowId))
+			rowId++
+		}
+		err := writer.Flush()
+		if err != nil {
+			logger.Fatal(err.Error())
+			return errors.New(err.Error())
+		}
+		if tools.isRecover() {
+			keys := make([]string, 0, len(flushedUID))
+			for k := range flushedUID {
+				keys = append(keys, k)
+			}
+			tools.done = append(tools.done, keys...)
+		}
+		if rowId%100 == 0 && rowId < 1000 ||
+			rowId%1000 == 0 && rowId < 10000 ||
+			rowId%10000 == 0 && rowId < 100000 ||
+			rowId%100000 == 0 {
+			logger.Info(fmt.Sprintf("Processed %d rows.", rowId))
 		}
 	}
+	return nil
 }
 
 func main() {
