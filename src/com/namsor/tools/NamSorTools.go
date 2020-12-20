@@ -202,7 +202,7 @@ func NewNamSorTools() *NamrSorTools {
 			"header":          header,
 			"uid":             uid,
 			"digest":          digest,
-			"endpoint":        service,
+			"service":         service,
 			"encoding":        encoding,
 		},
 	}
@@ -263,8 +263,8 @@ func (tools *NamrSorTools) run() error {
 		return errors.New(fmt.Sprintf("can't get api-version %s", err.Error()))
 	}
 
-	service := tools.commandLineOptions["service"].(string)
-	inputFileName := tools.commandLineOptions["inputFile"].(string)
+	service := tools.getCommandLineOptions()["service"].(string)
+	inputFileName := tools.getCommandLineOptions()["inputFile"].(string)
 	if inputFileName == "" {
 		return errors.New("missing input file")
 	}
@@ -274,7 +274,7 @@ func (tools *NamrSorTools) run() error {
 		return errors.New(err.Error())
 	}
 
-	outputFileName := tools.commandLineOptions["outputFile"].(string)
+	outputFileName := tools.getCommandLineOptions()["outputFile"].(string)
 	if outputFileName == "" {
 		outputFileName = inputFileName + "." + service
 		if digest {
@@ -285,7 +285,7 @@ func (tools *NamrSorTools) run() error {
 	}
 
 	outputFileExists := false
-	outputFileOverwrite := tools.commandLineOptions["overwrite"].(bool)
+	outputFileOverwrite := tools.getCommandLineOptions()["overwrite"].(bool)
 	if _, err := os.Stat(outputFileName); err == nil {
 		if !outputFileOverwrite && !tools.isRecover() {
 			return errors.New(fmt.Sprintf("OutputFile %s already exsists, user -r to recover and continue job", inputFileName))
@@ -895,7 +895,7 @@ func (tools *NamrSorTools) process(service string, reader *bufio.Reader, writer 
 						firstName,
 						lastName,
 						phoneNumber,
-						nil,
+						namsorapi.FirstLastNameOriginedOut{},
 					}
 
 					tools.firstLastNamesPhoneNumberIn[uId] = firstLastNamePhoneNumberIn
