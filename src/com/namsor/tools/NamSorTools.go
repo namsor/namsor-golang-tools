@@ -1168,8 +1168,8 @@ func (tools *NamrSorTools) appendX(writer *bufio.Writer, outputHeaders []string,
 func main() {
 	flag.StringVarP(&apiKey, "apiKey", "a", "", "NamSor API Key")
 	flag.StringVarP(&inputFile, "inputFile", "i", "", "(short-hand) input file name")
-	flag.StringVarP(&outputFile, "outputFile", "w", "", "(short-hand) output file name")
-	flag.BoolVarP(&overwrite, "overwrite", "o", false, "(short-hand) overwrite existing output file")
+	flag.StringVarP(&outputFile, "outputFile", "o", "", "(short-hand) output file name")
+	flag.BoolVarP(&overwrite, "overwrite", "w", false, "(short-hand) overwrite existing output file")
 	flag.BoolVarP(&recover, "recover", "r", false, "(short-hand) continue from a job (requires uid)")
 	flag.StringVarP(&inputDataFormat, "inputDataFormat", "f", "", "(short-hand) input data format : first name, last name (fnln) / first name, last name, geo country iso2 (fnlngeo) / full name (name) / full name, geo country iso2 (namegeo) ")
 	flag.BoolVarP(&header, "header", "h", false, "output header")
