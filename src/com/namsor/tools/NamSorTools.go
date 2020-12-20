@@ -136,18 +136,18 @@ var OUTPUT_DATA_HEADERS = [][]string{
 }
 
 var (
-	apiKey          string = ""
-	inputFile       string = ""
-	countryIso2     string = ""
-	outputFile      string = ""
+	apiKey          string
+	inputFile       string
+	countryIso2     string
+	outputFile      string
 	overwrite       bool
 	recover         bool
-	inputDataFormat string = ""
+	inputDataFormat string
 	header          bool
 	uid             bool
 	digest          bool
-	service         string = ""
-	encoding        string = ""
+	service         string
+	encoding        string
 )
 
 var uidGen int = 0
@@ -358,7 +358,7 @@ func (tools *NamrSorTools) run() error {
 		return errors.New(errR.Error())
 	}
 
-	outFile, err := os.Open(outputFile)
+	outFile, err := os.OpenFile(outputFile, os.O_CREATE, 0660)
 	if err != nil {
 		logger.Fatal(err.Error())
 		return errors.New(err.Error())
@@ -649,13 +649,22 @@ func (tools *NamrSorTools) processData(service string, outputHeaders []string, w
 			values = append(values, v)
 		}
 		if service == SERVICE_NAME_ORIGIN {
-			origins, _ := tools.processOrigin(values)
+			origins, er := tools.processOrigin(values)
+			if er != nil {
+				return err
+			}
 			err = tools.appendX(writer, outputHeaders, tools.firstLastNamesIn, inpType, origins, reflect.TypeOf(namsorapi.FirstLastNameOriginedOut{}), softwareNameAndVersion)
 		} else if service == SERVICE_NAME_GENDER {
-			genders, _ := tools.processGender(values)
+			genders, er := tools.processGender(values)
+			if er != nil {
+				return err
+			}
 			err = tools.appendX(writer, outputHeaders, tools.firstLastNamesIn, inpType, genders, reflect.TypeOf(namsorapi.FirstLastNameGenderedOut{}), softwareNameAndVersion)
 		} else if service == SERVICE_NAME_COUNTRY {
-			countrieds, _ := tools.processCountryAdapted(values)
+			countrieds, er := tools.processCountryAdapted(values)
+			if er != nil {
+				return err
+			}
 			err = tools.appendX(writer, outputHeaders, tools.firstLastNamesIn, inpType, countrieds, reflect.TypeOf(namsorapi.PersonalNameGeoOut{}), softwareNameAndVersion)
 		}
 		tools.firstLastNamesIn = make(map[string]namsorapi.FirstLastNameIn)
@@ -671,16 +680,28 @@ func (tools *NamrSorTools) processData(service string, outputHeaders []string, w
 			values = append(values, v)
 		}
 		if service == (SERVICE_NAME_ORIGIN) {
-			origins, _ := tools.processOriginGeo(values)
+			origins, er := tools.processOriginGeo(values)
+			if er != nil {
+				return err
+			}
 			err = tools.appendX(writer, outputHeaders, tools.firstLastNamesGeoIn, inpType, origins, reflect.TypeOf(namsorapi.FirstLastNameOriginedOut{}), softwareNameAndVersion)
 		} else if service == (SERVICE_NAME_GENDER) {
-			genders, _ := tools.processGenderGeo(values)
+			genders, er := tools.processGenderGeo(values)
+			if er != nil {
+				return err
+			}
 			err = tools.appendX(writer, outputHeaders, tools.firstLastNamesGeoIn, inpType, genders, reflect.TypeOf(namsorapi.FirstLastNameGenderedOut{}), softwareNameAndVersion)
 		} else if service == (SERVICE_NAME_DIASPORA) {
-			diasporas, _ := tools.processDiaspora(values)
+			diasporas, er := tools.processDiaspora(values)
+			if er != nil {
+				return err
+			}
 			err = tools.appendX(writer, outputHeaders, tools.firstLastNamesGeoIn, inpType, diasporas, reflect.TypeOf(namsorapi.FirstLastNameDiasporaedOut{}), softwareNameAndVersion)
 		} else if service == (SERVICE_NAME_USRACEETHNICITY) {
-			usRaceEthnicities, _ := tools.processUSRaceEthnicity(values)
+			usRaceEthnicities, er := tools.processUSRaceEthnicity(values)
+			if er != nil {
+				return err
+			}
 			err = tools.appendX(writer, outputHeaders, tools.firstLastNamesGeoIn, inpType, usRaceEthnicities, reflect.TypeOf(namsorapi.FirstLastNameUsRaceEthnicityOut{}), softwareNameAndVersion)
 		}
 		tools.firstLastNamesGeoIn = make(map[string]namsorapi.FirstLastNameGeoIn)
@@ -696,13 +717,22 @@ func (tools *NamrSorTools) processData(service string, outputHeaders []string, w
 			values = append(values, v)
 		}
 		if service == (SERVICE_NAME_PARSE) {
-			parseds, _ := tools.processParse(values)
+			parseds, er := tools.processParse(values)
+			if er != nil {
+				return err
+			}
 			err = tools.appendX(writer, outputHeaders, tools.personalNamesIn, inpType, parseds, reflect.TypeOf(namsorapi.PersonalNameParsedOut{}), softwareNameAndVersion)
 		} else if service == (SERVICE_NAME_GENDER) {
-			genders, _ := tools.processGenderFull(values)
+			genders, er := tools.processGenderFull(values)
+			if er != nil {
+				return err
+			}
 			err = tools.appendX(writer, outputHeaders, tools.personalNamesIn, inpType, genders, reflect.TypeOf(namsorapi.PersonalNameGenderedOut{}), softwareNameAndVersion)
 		} else if service == (SERVICE_NAME_COUNTRY) {
-			countrieds, _ := tools.processCountry(values)
+			countrieds, er := tools.processCountry(values)
+			if er != nil {
+				return err
+			}
 			err = tools.appendX(writer, outputHeaders, tools.personalNamesIn, inpType, countrieds, reflect.TypeOf(namsorapi.PersonalNameGeoOut{}), softwareNameAndVersion)
 		}
 		tools.personalNamesIn = make(map[string]namsorapi.PersonalNameIn)
@@ -718,10 +748,16 @@ func (tools *NamrSorTools) processData(service string, outputHeaders []string, w
 			values = append(values, v)
 		}
 		if service == (SERVICE_NAME_PARSE) {
-			parseds, _ := tools.processParseGeo(values)
+			parseds, er := tools.processParseGeo(values)
+			if er != nil {
+				return err
+			}
 			err = tools.appendX(writer, outputHeaders, tools.personalNamesGeoIn, inpType, parseds, reflect.TypeOf(namsorapi.PersonalNameParsedOut{}), softwareNameAndVersion)
 		} else if service == (SERVICE_NAME_GENDER) {
-			genders, _ := tools.processGenderFullGeo(values)
+			genders, er := tools.processGenderFullGeo(values)
+			if er != nil {
+				return err
+			}
 			err = tools.appendX(writer, outputHeaders, tools.personalNamesGeoIn, inpType, genders, reflect.TypeOf(namsorapi.PersonalNameGenderedOut{}), softwareNameAndVersion)
 		}
 		tools.personalNamesGeoIn = make(map[string]namsorapi.PersonalNameGeoIn)
@@ -737,7 +773,10 @@ func (tools *NamrSorTools) processData(service string, outputHeaders []string, w
 			values = append(values, v)
 		}
 		if service == (SERVICE_NAME_PHONECODE) {
-			phoneCodes, _ := tools.processPhoneCode(values)
+			phoneCodes, er := tools.processPhoneCode(values)
+			if er != nil {
+				return err
+			}
 			err = tools.appendX(writer, outputHeaders, tools.firstLastNamesPhoneNumberIn, inpType, phoneCodes, reflect.TypeOf(namsorapi.FirstLastNamePhoneCodedOut{}), softwareNameAndVersion)
 		}
 		tools.firstLastNamesPhoneNumberIn = make(map[string]namsorapi.FirstLastNamePhoneNumberIn)
@@ -790,7 +829,7 @@ func (tools *NamrSorTools) process(service string, reader *bufio.Reader, writer 
 	if tools.isWithUID() {
 		dataFormatExpected += "uid" + tools.separatorIn
 	}
-	countryIso2Default := tools.getCommandLineOptions()["countryIso2Default"].(string)
+	countryIso2Default := tools.getCommandLineOptions()["countryIso2"].(string)
 
 	for i, val := range inputHeaders {
 		dataFormatExpected += val
@@ -1181,7 +1220,6 @@ func main() {
 	flag.Parse()
 
 	tools := NewNamSorTools()
-	//print(tools.commandLineOptions["recover"].(bool))
 	err := tools.run()
 	if err != nil {
 		logger.Fatalf(err.Error())
