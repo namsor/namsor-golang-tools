@@ -839,6 +839,7 @@ func (tools *NamrSorTools) process(service string, reader *bufio.Reader, writer 
 	if err != nil && err != io.EOF {
 		return err
 	}
+	line = strings.TrimRight(line, "\r\n")
 	for line != "" {
 		if !strings.HasPrefix(line, "#") {
 			if strings.HasSuffix(line, "|") {
@@ -853,6 +854,7 @@ func (tools *NamrSorTools) process(service string, reader *bufio.Reader, writer 
 					if err != nil && err != io.EOF {
 						return err
 					}
+					line = strings.TrimRight(line, "\r\n")
 					continue
 				} else {
 					return errors.New("Line " + strconv.Itoa(lineId) + ", expected input with format : " + dataFormatExpected + " line = " + line)
@@ -948,6 +950,7 @@ func (tools *NamrSorTools) process(service string, reader *bufio.Reader, writer 
 		if err != nil && err != io.EOF {
 			return err
 		}
+		line = strings.TrimRight(line, "\r\n")
 	}
 	err = tools.processData(service, outputHeaders, writer, true, softwareNameAndVersion)
 	err = writer.Flush()
