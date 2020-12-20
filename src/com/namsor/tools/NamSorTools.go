@@ -5,12 +5,12 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"errors"
-	"flag"
 	"fmt"
 	"github.com/antihax/optional"
 	namsorapi "github.com/namsor/namsor-golang-sdk2"
 	"github.com/paulrosania/go-charset/charset"
 	logger "github.com/sirupsen/logrus"
+	flag "github.com/spf13/pflag"
 	"golang.org/x/net/context"
 	"hash"
 	"io"
@@ -145,7 +145,7 @@ var (
 	header          bool
 	uid             bool
 	digest          bool
-	endpoint        string
+	service         string
 	encoding        string
 )
 
@@ -202,7 +202,7 @@ func NewNamSorTools() *NamrSorTools {
 			"header":          header,
 			"uid":             uid,
 			"digest":          digest,
-			"endpoint":        endpoint,
+			"endpoint":        service,
 			"encoding":        encoding,
 		},
 	}
@@ -1165,24 +1165,17 @@ func (tools *NamrSorTools) appendX(writer *bufio.Writer, outputHeaders []string,
 }
 
 func main() {
-	flag.StringVar(&apiKey, "apiKey", "", "NamSor API Key")
-	flag.StringVar(&inputFile, "i", "", "(short-hand) input file name")
-	flag.StringVar(&inputFile, "inputFile", "", "input file name")
-	flag.StringVar(&outputFile, "o", "", "(short-hand) output file name")
-	flag.StringVar(&outputFile, "outputFile", "", "output file name")
-	flag.BoolVar(&overwrite, "w", false, "(short-hand) overwrite existing output file")
-	flag.BoolVar(&overwrite, "overwrite", false, "overwrite existing output file")
-	flag.BoolVar(&recover, "r", false, "(short-hand) continue from a job (requires uid)")
-	flag.BoolVar(&recover, "recover", false, "continue from a job (requires uid)")
-	flag.StringVar(&inputDataFormat, "f", "", "(short-hand) input data format : first name, last name (fnln) / first name, last name, geo country iso2 (fnlngeo) / full name (name) / full name, geo country iso2 (namegeo) ")
-	flag.StringVar(&inputDataFormat, "inputDataFormat", "", "input data format : first name, last name (fnln) / first name, last name, geo country iso2 (fnlngeo) / full name (name) / full name, geo country iso2 (namegeo) ")
-	flag.BoolVar(&header, "header", false, "output header")
-	flag.BoolVar(&uid, "uid", false, "input data has an ID prefix")
-	flag.BoolVar(&digest, "digest", false, "SHA-256 digest names in output")
-	flag.StringVar(&endpoint, "service", "", "(short-hand) service : parse / gender / origin / diaspora / usraceethnicity")
-	flag.StringVar(&endpoint, "endpoint", "", "service : parse / gender / origin / diaspora / usraceethnicity")
-	flag.StringVar(&encoding, "e", "", "(short-hand) encoding : UTF-8 by default")
-	flag.StringVar(&encoding, "encoding", "", "encoding : UTF-8 by default")
+	flag.StringVarP(&apiKey, "apiKey", "a", "", "NamSor API Key")
+	flag.StringVarP(&inputFile, "inputFile", "i", "", "(short-hand) input file name")
+	flag.StringVarP(&outputFile, "outputFile", "w", "", "(short-hand) output file name")
+	flag.BoolVarP(&overwrite, "overwrite", "o", false, "(short-hand) overwrite existing output file")
+	flag.BoolVarP(&recover, "recover", "r", false, "(short-hand) continue from a job (requires uid)")
+	flag.StringVarP(&inputDataFormat, "inputDataFormat", "f", "", "(short-hand) input data format : first name, last name (fnln) / first name, last name, geo country iso2 (fnlngeo) / full name (name) / full name, geo country iso2 (namegeo) ")
+	flag.BoolVarP(&header, "header", "h", false, "output header")
+	flag.BoolVarP(&uid, "uid", "u", false, "input data has an ID prefix")
+	flag.BoolVarP(&digest, "digest", "d", false, "SHA-256 digest names in output")
+	flag.StringVarP(&service, "service", "s", "", "(short-hand) service : parse / gender / origin / diaspora / usraceethnicity")
+	flag.StringVarP(&encoding, "encoding", "e", "", "(short-hand) encoding : UTF-8 by default")
 
 	flag.Parse()
 
