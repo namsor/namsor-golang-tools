@@ -9,6 +9,7 @@ import (
 	"github.com/antihax/optional"
 	namsorapi "github.com/namsor/namsor-golang-sdk2"
 	"github.com/paulrosania/go-charset/charset"
+	_ "github.com/paulrosania/go-charset/data"
 	logger "github.com/sirupsen/logrus"
 	flag "github.com/spf13/pflag"
 	"golang.org/x/net/context"
