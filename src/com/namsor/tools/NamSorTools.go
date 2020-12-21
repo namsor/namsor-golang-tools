@@ -192,6 +192,7 @@ func NewNamSorTools() *NamrSorTools {
 		digest:                      nil,
 		skipErrors:                  false,
 		recover:                     recover,
+		withUID:                     uid,
 		firstLastNamesGeoIn:         map[string]namsorapi.FirstLastNameGeoIn{},
 		firstLastNamesIn:            map[string]namsorapi.FirstLastNameIn{},
 		personalNamesIn:             map[string]namsorapi.PersonalNameIn{},
@@ -794,6 +795,8 @@ func (tools *NamrSorTools) process(service string, reader *bufio.Reader, writer 
 	for i, val := range INPUT_DATA_FORMAT {
 		if val == inputDataFormat {
 			inputHeaders = INPUT_DATA_FORMAT_HEADER[i]
+			print(inputHeaders)
+			print("\n")
 			break
 		}
 	}
@@ -818,12 +821,10 @@ func (tools *NamrSorTools) process(service string, reader *bufio.Reader, writer 
 			return err
 		}
 	}
-	var dataLenExpected int = len(inputHeaders)
-	if tools.withUID {
-		dataLenExpected += 1
-	}
+	var dataLenExpected = len(inputHeaders)
 	dataFormatExpected := ""
 	if tools.isWithUID() {
+		dataLenExpected += 1
 		dataFormatExpected += "uid" + tools.separatorIn
 	}
 	countryIso2Default := tools.getCommandLineOptions()["countryIso2"].(string)
@@ -848,7 +849,7 @@ func (tools *NamrSorTools) process(service string, reader *bufio.Reader, writer 
 			lineData := strings.Split(line, "|")
 			if len(lineData) != dataLenExpected {
 				if tools.skipErrors {
-					logger.Warn("Line " + strconv.Itoa(lineId) + ", expected input with format : " + dataFormatExpected + " line = " + line) // todo change to new logger
+					logger.Warn("Line " + strconv.Itoa(lineId) + ", expected input with format : " + dataFormatExpected + " line = " + line)
 					lineId++
 					line, err = reader.ReadString('\n')
 					if err != nil && err != io.EOF {
