@@ -1222,16 +1222,16 @@ func (tools *NamrSorTools) appendX(writer *bufio.Writer, outputHeaders []string,
 
 func main() {
 	flag.StringVarP(&apiKey, "apiKey", "a", "", "NamSor API Key")
-	flag.StringVarP(&inputFile, "inputFile", "i", "", "(short-hand) input file name")
-	flag.StringVarP(&outputFile, "outputFile", "o", "", "(short-hand) output file name")
-	flag.BoolVarP(&overwrite, "overwrite", "w", false, "(short-hand) overwrite existing output file")
-	flag.BoolVarP(&recover, "recover", "r", false, "(short-hand) continue from a job (requires uid)")
-	flag.StringVarP(&inputDataFormat, "inputDataFormat", "f", "", "(short-hand) input data format : first name, last name (fnln) / first name, last name, geo country iso2 (fnlngeo) / full name (name) / full name, geo country iso2 (namegeo) ")
+	flag.StringVarP(&inputFile, "inputFile", "i", "", "input file name")
+	flag.StringVarP(&outputFile, "outputFile", "o", "", "output file name")
+	flag.BoolVarP(&overwrite, "overwrite", "w", false, "overwrite existing output file")
+	flag.BoolVarP(&recover, "recover", "r", false, "continue from a job (requires uid)")
+	flag.StringVarP(&inputDataFormat, "inputDataFormat", "f", "", "input data format : first name, last name (fnln) / first name, last name, geo country iso2 (fnlngeo) / full name (name) / full name, geo country iso2 (namegeo) ")
 	flag.BoolVarP(&header, "header", "h", false, "output header")
 	flag.BoolVarP(&uid, "uid", "u", false, "input data has an ID prefix")
 	flag.BoolVarP(&digest, "digest", "d", false, "SHA-256 digest names in output")
-	flag.StringVarP(&service, "service", "s", "", "(short-hand) service : parse / gender / origin / diaspora / usraceethnicity")
-	flag.StringVarP(&encoding, "encoding", "e", "", "(short-hand) encoding : UTF-8 by default")
+	flag.StringVarP(&service, "service", "s", "", "service : parse / gender / origin / diaspora / usraceethnicity")
+	flag.StringVarP(&encoding, "encoding", "e", "", "encoding : UTF-8 by default")
 
 	flag.Parse()
 
