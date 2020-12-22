@@ -8,11 +8,11 @@ git clone https://github.com/namsor/namsor-golang-tools-v2.git
 ```
 - Navigate to the directory
 ```bash
-cd namsor-golang-tools-v2/src/com/namsor/tools
+cd namsor-golang-tools-v2
 ```
 - Install the dependencies
 ```bash
-go get
+go mod vendor
 ```
 
 NB: we use Unix conventions for file paths, ex. samples/some_fnln.txt but on MS Windows that would be samples\some_fnln.txt

@@ -2,8 +2,9 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="1a036e39-ce1b-4836-ad32-d471fb2bd86f" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/com/namsor/tools/NamSorTools.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/NamSorTools.go" beforeDir="false" afterPath="$PROJECT_DIR$/NamSorTools.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -82,50 +83,55 @@
       <screen x="0" y="0" width="1536" height="864" />
     </state>
     <state x="224" y="87" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.0.1536.864@0.0.1536.864" timestamp="1608626643780" />
-    <state width="1491" height="330" key="GridCell.Tab.0.bottom" timestamp="1608627568739">
+    <state width="1491" height="330" key="GridCell.Tab.0.bottom" timestamp="1608628426101">
       <screen x="0" y="0" width="1536" height="864" />
     </state>
-    <state width="1491" height="330" key="GridCell.Tab.0.bottom/0.0.1536.864@0.0.1536.864" timestamp="1608627568739" />
-    <state width="1491" height="330" key="GridCell.Tab.0.center" timestamp="1608627568739">
+    <state width="1491" height="330" key="GridCell.Tab.0.bottom/0.0.1536.864@0.0.1536.864" timestamp="1608628426101" />
+    <state width="1491" height="330" key="GridCell.Tab.0.center" timestamp="1608628426100">
       <screen x="0" y="0" width="1536" height="864" />
     </state>
-    <state width="1491" height="330" key="GridCell.Tab.0.center/0.0.1536.864@0.0.1536.864" timestamp="1608627568739" />
-    <state width="1491" height="330" key="GridCell.Tab.0.left" timestamp="1608627568738">
+    <state width="1491" height="330" key="GridCell.Tab.0.center/0.0.1536.864@0.0.1536.864" timestamp="1608628426100" />
+    <state width="1491" height="330" key="GridCell.Tab.0.left" timestamp="1608628426100">
       <screen x="0" y="0" width="1536" height="864" />
     </state>
-    <state width="1491" height="330" key="GridCell.Tab.0.left/0.0.1536.864@0.0.1536.864" timestamp="1608627568738" />
-    <state width="1491" height="330" key="GridCell.Tab.0.right" timestamp="1608627568739">
+    <state width="1491" height="330" key="GridCell.Tab.0.left/0.0.1536.864@0.0.1536.864" timestamp="1608628426100" />
+    <state width="1491" height="330" key="GridCell.Tab.0.right" timestamp="1608628426100">
       <screen x="0" y="0" width="1536" height="864" />
     </state>
-    <state width="1491" height="330" key="GridCell.Tab.0.right/0.0.1536.864@0.0.1536.864" timestamp="1608627568739" />
-    <state width="1491" height="330" key="GridCell.Tab.1.bottom" timestamp="1608627568740">
+    <state width="1491" height="330" key="GridCell.Tab.0.right/0.0.1536.864@0.0.1536.864" timestamp="1608628426100" />
+    <state width="1491" height="330" key="GridCell.Tab.1.bottom" timestamp="1608628426102">
       <screen x="0" y="0" width="1536" height="864" />
     </state>
-    <state width="1491" height="330" key="GridCell.Tab.1.bottom/0.0.1536.864@0.0.1536.864" timestamp="1608627568740" />
-    <state width="1491" height="330" key="GridCell.Tab.1.center" timestamp="1608627568740">
+    <state width="1491" height="330" key="GridCell.Tab.1.bottom/0.0.1536.864@0.0.1536.864" timestamp="1608628426102" />
+    <state width="1491" height="330" key="GridCell.Tab.1.center" timestamp="1608628426101">
       <screen x="0" y="0" width="1536" height="864" />
     </state>
-    <state width="1491" height="330" key="GridCell.Tab.1.center/0.0.1536.864@0.0.1536.864" timestamp="1608627568740" />
-    <state width="1491" height="330" key="GridCell.Tab.1.left" timestamp="1608627568740">
+    <state width="1491" height="330" key="GridCell.Tab.1.center/0.0.1536.864@0.0.1536.864" timestamp="1608628426101" />
+    <state width="1491" height="330" key="GridCell.Tab.1.left" timestamp="1608628426101">
       <screen x="0" y="0" width="1536" height="864" />
     </state>
-    <state width="1491" height="330" key="GridCell.Tab.1.left/0.0.1536.864@0.0.1536.864" timestamp="1608627568740" />
-    <state width="1491" height="330" key="GridCell.Tab.1.right" timestamp="1608627568740">
+    <state width="1491" height="330" key="GridCell.Tab.1.left/0.0.1536.864@0.0.1536.864" timestamp="1608628426101" />
+    <state width="1491" height="330" key="GridCell.Tab.1.right" timestamp="1608628426101">
       <screen x="0" y="0" width="1536" height="864" />
     </state>
-    <state width="1491" height="330" key="GridCell.Tab.1.right/0.0.1536.864@0.0.1536.864" timestamp="1608627568740" />
-    <state width="774" height="438" key="XDebugger.FullValuePopup" timestamp="1608627457935">
+    <state width="1491" height="330" key="GridCell.Tab.1.right/0.0.1536.864@0.0.1536.864" timestamp="1608628426101" />
+    <state width="774" height="438" key="XDebugger.FullValuePopup" timestamp="1608628322422">
       <screen x="0" y="0" width="1536" height="864" />
     </state>
-    <state width="774" height="438" key="XDebugger.FullValuePopup/0.0.1536.864@0.0.1536.864" timestamp="1608627457935" />
+    <state width="774" height="438" key="XDebugger.FullValuePopup/0.0.1536.864@0.0.1536.864" timestamp="1608628322422" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
           <url>file://$PROJECT_DIR$/NamSorTools.go</url>
-          <line>946</line>
-          <option name="timeStamp" value="7" />
+          <line>1243</line>
+          <option name="timeStamp" value="13" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/NamSorTools.go</url>
+          <line>757</line>
+          <option name="timeStamp" value="15" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
