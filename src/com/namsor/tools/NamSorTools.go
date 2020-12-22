@@ -303,7 +303,7 @@ func (tools *NamrSorTools) run() error {
 
 	if tools.isRecover() && outputFileExists {
 		logger.Infof("Recovering from existing %s", outputFileName)
-		outFile, err := os.Open(outputFile)
+		outFile, err := os.Open(outputFileName)
 		if err != nil {
 			logger.Fatal(err.Error())
 			return errors.New(err.Error())
@@ -335,6 +335,9 @@ func (tools *NamrSorTools) run() error {
 
 			doneLine, err = readerDone.ReadString('\n')
 			if err != nil {
+				if err == io.EOF {
+					break
+				}
 				logger.Fatal(err.Error())
 				return errors.New(err.Error())
 			}
