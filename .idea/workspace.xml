@@ -3,8 +3,6 @@
   <component name="ChangeListManager">
     <list default="true" id="1a036e39-ce1b-4836-ad32-d471fb2bd86f" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/NamSorTools.go" beforeDir="false" afterPath="$PROJECT_DIR$/NamSorTools.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -48,7 +46,7 @@
     <configuration name="go build NamSorTools.go" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true" nameIsGenerated="true">
       <module name="namsor-golang-tools-v2" />
       <working_directory value="$PROJECT_DIR$" />
-      <parameters value=" -apiKey 214ecee045a751dd3946ba55b7e2bbc4 --overwrite --header --uid --inputDataFormat namegeo --inputFile &quot;D:\Sync\Dropbox\0_NamSor_SAS\NamSor_com\NamSor SAS\10_clients\UIT_VN\UIT-ViNames_idnamegeo.txt&quot; --service gender" />
+      <parameters value=" --apiKey 22605788cc402eee0f7b5f25e5b22946 --overwrite --header --uid --inputDataFormat namegeo --inputFile &quot;D:\Sync\Dropbox\0_NamSor_SAS\NamSor_com\NamSor SAS\10_clients\UIT_VN\UIT-ViNames_idnamegeo.txt&quot; --service country" />
       <kind value="FILE" />
       <filePath value="$PROJECT_DIR$/NamSorTools.go" />
       <package value="namsor-golang-tools-v2" />
@@ -79,42 +77,42 @@
     <integration-enabled>true</integration-enabled>
   </component>
   <component name="WindowStateProjectService">
-    <state x="224" y="87" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1608626643780">
+    <state x="224" y="87" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1608658897369">
       <screen x="0" y="0" width="1536" height="864" />
     </state>
-    <state x="224" y="87" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.0.1536.864@0.0.1536.864" timestamp="1608626643780" />
-    <state width="1491" height="330" key="GridCell.Tab.0.bottom" timestamp="1608628426101">
+    <state x="224" y="87" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.0.1536.864@0.0.1536.864" timestamp="1608658897369" />
+    <state width="1491" height="237" key="GridCell.Tab.0.bottom" timestamp="1608658986661">
       <screen x="0" y="0" width="1536" height="864" />
     </state>
-    <state width="1491" height="330" key="GridCell.Tab.0.bottom/0.0.1536.864@0.0.1536.864" timestamp="1608628426101" />
-    <state width="1491" height="330" key="GridCell.Tab.0.center" timestamp="1608628426100">
+    <state width="1491" height="237" key="GridCell.Tab.0.bottom/0.0.1536.864@0.0.1536.864" timestamp="1608658986661" />
+    <state width="1491" height="237" key="GridCell.Tab.0.center" timestamp="1608658986661">
       <screen x="0" y="0" width="1536" height="864" />
     </state>
-    <state width="1491" height="330" key="GridCell.Tab.0.center/0.0.1536.864@0.0.1536.864" timestamp="1608628426100" />
-    <state width="1491" height="330" key="GridCell.Tab.0.left" timestamp="1608628426100">
+    <state width="1491" height="237" key="GridCell.Tab.0.center/0.0.1536.864@0.0.1536.864" timestamp="1608658986661" />
+    <state width="1491" height="237" key="GridCell.Tab.0.left" timestamp="1608658986661">
       <screen x="0" y="0" width="1536" height="864" />
     </state>
-    <state width="1491" height="330" key="GridCell.Tab.0.left/0.0.1536.864@0.0.1536.864" timestamp="1608628426100" />
-    <state width="1491" height="330" key="GridCell.Tab.0.right" timestamp="1608628426100">
+    <state width="1491" height="237" key="GridCell.Tab.0.left/0.0.1536.864@0.0.1536.864" timestamp="1608658986661" />
+    <state width="1491" height="237" key="GridCell.Tab.0.right" timestamp="1608658986661">
       <screen x="0" y="0" width="1536" height="864" />
     </state>
-    <state width="1491" height="330" key="GridCell.Tab.0.right/0.0.1536.864@0.0.1536.864" timestamp="1608628426100" />
-    <state width="1491" height="330" key="GridCell.Tab.1.bottom" timestamp="1608628426102">
+    <state width="1491" height="237" key="GridCell.Tab.0.right/0.0.1536.864@0.0.1536.864" timestamp="1608658986661" />
+    <state width="1491" height="237" key="GridCell.Tab.1.bottom" timestamp="1608658986493">
       <screen x="0" y="0" width="1536" height="864" />
     </state>
-    <state width="1491" height="330" key="GridCell.Tab.1.bottom/0.0.1536.864@0.0.1536.864" timestamp="1608628426102" />
-    <state width="1491" height="330" key="GridCell.Tab.1.center" timestamp="1608628426101">
+    <state width="1491" height="237" key="GridCell.Tab.1.bottom/0.0.1536.864@0.0.1536.864" timestamp="1608658986493" />
+    <state width="1491" height="237" key="GridCell.Tab.1.center" timestamp="1608658986493">
       <screen x="0" y="0" width="1536" height="864" />
     </state>
-    <state width="1491" height="330" key="GridCell.Tab.1.center/0.0.1536.864@0.0.1536.864" timestamp="1608628426101" />
-    <state width="1491" height="330" key="GridCell.Tab.1.left" timestamp="1608628426101">
+    <state width="1491" height="237" key="GridCell.Tab.1.center/0.0.1536.864@0.0.1536.864" timestamp="1608658986493" />
+    <state width="1491" height="237" key="GridCell.Tab.1.left" timestamp="1608658986493">
       <screen x="0" y="0" width="1536" height="864" />
     </state>
-    <state width="1491" height="330" key="GridCell.Tab.1.left/0.0.1536.864@0.0.1536.864" timestamp="1608628426101" />
-    <state width="1491" height="330" key="GridCell.Tab.1.right" timestamp="1608628426101">
+    <state width="1491" height="237" key="GridCell.Tab.1.left/0.0.1536.864@0.0.1536.864" timestamp="1608658986493" />
+    <state width="1491" height="237" key="GridCell.Tab.1.right" timestamp="1608658986493">
       <screen x="0" y="0" width="1536" height="864" />
     </state>
-    <state width="1491" height="330" key="GridCell.Tab.1.right/0.0.1536.864@0.0.1536.864" timestamp="1608628426101" />
+    <state width="1491" height="237" key="GridCell.Tab.1.right/0.0.1536.864@0.0.1536.864" timestamp="1608658986493" />
     <state width="774" height="438" key="XDebugger.FullValuePopup" timestamp="1608628322422">
       <screen x="0" y="0" width="1536" height="864" />
     </state>
@@ -132,6 +130,11 @@
           <url>file://$PROJECT_DIR$/NamSorTools.go</url>
           <line>757</line>
           <option name="timeStamp" value="15" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/NamSorTools.go</url>
+          <line>538</line>
+          <option name="timeStamp" value="18" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
